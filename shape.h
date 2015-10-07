@@ -53,4 +53,12 @@ protected:
 	GLuint normal_visualization_handle;
 
 	bool GLReturnedError(char * s);
+
+	glm::vec3 RandomColor(float min = 0.0f , float max = 1.0);
+
+	inline float Random(float min , float max)
+	{
+		return (float(rand()) / float(RAND_MAX)) * (max - min) + min;
+	}
+
 };

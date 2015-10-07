@@ -51,7 +51,8 @@ void DefineInstances(int n = 32)
 	instances[0].rate = 60.0f;
 }
 
-Disc disc1(32, pi<float>() * 1.5f,  0.25f, 0.125f);
+Disc disc1(32, pi<float>() * 1.5f, 0.25f, 0.125f);
+Disc disc2(32, pi<float>() * 2.0f , 0.25f , 0.0f);
 Cylinder cylinder(72, 1, pi<float>() * 2.0f);
 
 string exit_string = "Hit enter to exit:";
@@ -130,8 +131,8 @@ void DrawScene()
 {
 	phong_shader.GLReturnedError("DrawScene() - entering");
 #ifdef MOVE
-	mat4 m = rotate(mat4(), radians(window.current_time * 20.0f), vec3(0.0f, 1.0f, 0.0f));
-	m = translate(m, vec3(0.0f, 0.0f, 11.5f * cos(window.current_time * 0.5f)));
+	mat4 m = rotate(mat4() , radians(window.current_time * 30.0f) , vec3(0.0f , 1.0f , 0.2f));
+	m = translate(m, vec3(0.0f, 0.0f, 11.5f * cos(window.current_time * 0.25f)));
 #else
 	mat4 m;
 #endif // MOVE
@@ -156,7 +157,10 @@ void DrawScene()
 
 		phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 		phong_shader.SetMaterial(instances[i].diffuse, specular, 64.0f, ambient);
-		disc1.Draw(false);
+		if (i % 2 == 0)
+			disc1.Draw(false);
+		else
+			disc2.Draw(false);
 		phong_shader.UnUse();
 		phong_shader.GLReturnedError("DrawScene() - after first unuse");
 
@@ -256,7 +260,7 @@ int main(int argc, char * argv[])
 	phong_shader.CustomSetup();
 	constant_shader.CustomSetup();
 
-	DefineInstances(10);
+	DefineInstances(100);
 
 	glutMainLoop();
 	return 0;

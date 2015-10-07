@@ -64,6 +64,13 @@ bool Shape::CommonGLInitialization()
 	return true;
 }
 
+
+glm::vec3 Shape::RandomColor(float min , float max)
+{
+	return vec3(this->Random(min , max) , this->Random(min , max) , this->Random(min , max));
+}
+
+
 bool Shape::GLReturnedError(char * s)
 {
 	bool return_error = false;

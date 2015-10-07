@@ -5,6 +5,7 @@
 // Per-vertex attributes. The location here corresponds
 // to the attribute number in the calling CPU-based program.
 layout (location = 0) in vec4 position;
+layout (location = 1) in vec4 color;
 layout (location = 2) in vec3 normal;
 
 // Matrices we'll need - these are passed an uniforms...
@@ -26,6 +27,7 @@ out VS_OUT
     vec3 N;
     vec3 L;
     vec3 V;
+	vec4 C;
 } vs_out;
 
 // Position of light is taken to be already in eye coordinates.
@@ -45,6 +47,9 @@ void main(void)
 
 	// Calculate view vector
 	vs_out.V = normalize(-position_in_eye_coordinates.xyz);
+
+	// adding color
+	vs_out.C = color;
 
 	// Calculate the clip-space position of each vertex
 	// Recall, position_in_eye_coordinates has been multiplied by the mv.

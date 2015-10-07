@@ -10,7 +10,6 @@ Updates:	9/29/15		Refreshed.
 */
 
 #include "shader.h"
-#include <time.h>
 #include <assert.h>
 
 using namespace std;
@@ -24,7 +23,6 @@ Shader::Shader()
 	this->vertex_shader_id = BAD_GL_VALUE;
 	this->fragment_shader_id = BAD_GL_VALUE;
 	this->program_id = BAD_GL_VALUE;
-	srand(unsigned int(time(NULL)));
 }
 
 /*	This Shader() class implements or assumes a basic set of uniforms will be
@@ -172,11 +170,6 @@ stringstream Shader::GetShaderLog(GLuint shader_id)
 		delete[] buffer;
 	}
 	return s;
-}
-
-glm::vec3 Shader::RandomColor(float min , float max)
-{
-	return vec3(this->Random(min , max) , this->Random(min , max) , this->Random(min , max));
 }
 
 bool Shader::GLReturnedError(char * s)

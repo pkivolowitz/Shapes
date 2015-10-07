@@ -60,7 +60,7 @@ bool Disc::PreGLInitialize()
 
 		// There will be one triangle per slice. The vertices
 		// are defined as current outer, center, next outer.
-		for (int i = 0; i < real_number_of_slices - 1; i++)
+		for (int i = 0; i < real_number_of_slices; i++)
 		{
 			this->indices.push_back(i);
 			this->indices.push_back(this->vertices.size() - 1);

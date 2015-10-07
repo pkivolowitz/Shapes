@@ -36,13 +36,7 @@ public:
 	bool GLReturnedError(char * s);
 
 protected:
-	glm::vec3 RandomColor(float min = 0.0f , float max = 1.0f);
 	bool is_used;
-
-	inline float Random(float min , float max)
-	{
-		return (float(rand()) / float(RAND_MAX)) * (max - min) + min;
-	}
 
 private:
 };
