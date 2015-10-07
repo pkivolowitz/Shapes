@@ -55,6 +55,7 @@ bool Cylinder::PreGLInitialize()
 		{
 			this->vertices.push_back(vec3(m2 * p));
 			this->normals.push_back(*(this->vertices.end() - 1));
+			this->colors.push_back(vec4(this->RandomColor(), 1.0f));
 			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1) * e);
 			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1) * vec3(scale_factor_for_normals, scale_factor_for_normals, 1.0f));
 			m2 = rotate(m2, theta, z_axis);
