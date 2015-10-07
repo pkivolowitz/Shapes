@@ -41,3 +41,12 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.obj
+Debug/Shapes.Build.CppClean.log
+*.log
+Debug/Shapes.tlog/CL.command.1.tlog
+*.tlog
+Debug/vc140.idb
+*.pdb
+freeglut.dll
+*.dll
