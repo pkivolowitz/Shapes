@@ -1,9 +1,7 @@
 #version 410 core
 
-// Lifted largely from OpenGL Superbible 7th Edition
-
 // Output
-layout (location = 0) out vec4 color;
+layout (location = 0) out vec4 FragColor;
 
 // Input from vertex shader - this must correspond exactly
 // to the outputs of the vertex shader. The semantics of
@@ -13,9 +11,9 @@ layout (location = 0) out vec4 color;
 in VS_OUT
 {
     vec3 N;
-    vec3 L;
-    vec3 V;
+    vec3 P;
 	vec4 C;
+	vec2 T;
 } fs_in;
 
 // Material properties
@@ -24,6 +22,9 @@ uniform vec3 specular_albedo;
 uniform float specular_power;
 uniform vec3 ambient;
 
+// Position of light is taken to be in eye coordinates.
+uniform vec3 light_position = vec3(0.0, 0.0, 10.0);
+
 void main(void)
 {
 	vec3 diffuse2 = diffuse_albedo;
@@ -31,22 +32,19 @@ void main(void)
 
 	if (!gl_FrontFacing)
 	{
+		//FragColor = vec4(ambient, 1.0);
 		diffuse2 = vec3(fs_in.C);
 		N2 = -N2;
 	}
+	//else
+	//{
+		vec3 n = normalize(N2);
+		vec3 s = normalize(light_position - fs_in.P);
+		vec3 v = normalize(-fs_in.P);
+		vec3 r = reflect(-s, n);
+		vec3 diffuse = max(dot(s, n), 0.0) * diffuse2;
+		vec3 specular = pow(max(dot(r, v), 0.0), specular_power) * specular_albedo;
 
-	// Normalize the incoming N, L and V vectors
-	vec3 N = normalize(N2);
-	vec3 L = normalize(fs_in.L);
-	vec3 V = normalize(fs_in.V);
-
-	// Calculate R locally
-	vec3 R = reflect(-L, N);
-
-	// Compute the diffuse and specular components for each fragment
-	vec3 diffuse = max(dot(N, L), 0.0) * diffuse2;
-	vec3 specular = pow(max(dot(R, V), 0.0), specular_power) * specular_albedo;
-
-	// Write final color to the framebuffer
-	color = vec4(ambient + diffuse + specular, 1.0);
+		FragColor = vec4(ambient + diffuse + specular, 1.0);
+	//}
 }
