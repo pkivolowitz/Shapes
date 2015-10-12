@@ -16,12 +16,15 @@ bool Plane::PreGLInitialize()
 	float deltaY = -2.0f / float(this->divisionsY);
 	vec3 v(-1.0f , 1.0f , 0.0f);
 
-	for (int y = 0; y < this->divisionsY; y++)
+	for (int y = 0; y < this->divisionsY + 1; y++)
 	{
-		for (int x = 0; x < this->divisionsX; x++)
+		for (int x = 0; x < this->divisionsX + 1; x++)
 		{
 			this->vertices.push_back(v);
 			this->normals.push_back(vec3(0.0f,0.0f,1.0f));
+			this->colors.push_back(this->RandomColor((this->colors.size() > 0 ? *(this->colors.end() - 1) : vec4(0.5f , 0.5f , 0.5f , 1.0f)) , -0.2f , 0.2f));
+			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1));
+			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1) + vec3(0.0f, 0.0f, 1.0f) / 8.0f);
 			v.x = v.x + deltaX;
 		}
 		v.x = -1.0f;
@@ -33,15 +36,16 @@ bool Plane::PreGLInitialize()
 	{
 		for (int x = 0; x < this->divisionsX; x++)
 		{
+			// "Top" Triangle
 			this->indices.push_back(i);
 			this->indices.push_back(i + 1);
 			this->indices.push_back(i + divisionsX + 1);
+			// Bottom triangle
 			i++;
 		}
-
 		i++;
-
 	}
+	return true;
 }
 
 void Plane::NonGLTakeDown()
@@ -66,7 +70,6 @@ void Plane::Draw(bool draw_normals)
 	{
 		glBindVertexArray(this->vertex_array_handle);
 		glDrawElements(GL_TRIANGLES , this->indices.size() , GL_UNSIGNED_INT , nullptr);
-		glDrawElements(GL_QUADS , this->indices.size() , GL_UNSIGNED_INT , nullptr);
 	}
 	glBindVertexArray(0);
 	this->GLReturnedError("Plane::Draw() - exiting");
