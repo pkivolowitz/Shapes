@@ -44,7 +44,7 @@ void ConstantShader::CustomSetup()
 	Shader::UnUse();
 }
 
-void ConstantShader::SetMaterial(glm::vec3 & ambient)
+void ConstantShader::SetMaterial(glm::vec3 diffuse_albedo, glm::vec3 specular_albedo, float specular_power, glm::vec3 ambient)
 {
 	assert(this->is_used == true);
 	glUniform3fv(uniforms.ambient, 1, (GLfloat *)(&ambient));
