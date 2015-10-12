@@ -13,25 +13,43 @@
 #define	BAD_GL_VALUE	(GLuint(-1))
 #endif // !BAD_GL_VALUE
 
-/*	Attribute	Attribute
-				Number
-	vertices	0
-	colors		1
-	normals		2
-*/
-
 class Shape
 {
 public:
-	Shape() : vertex_values_handle(BAD_GL_VALUE),
-		color_values_handle(BAD_GL_VALUE),
-		normal_values_handle(BAD_GL_VALUE),
-		vertex_array_handle(BAD_GL_VALUE)
-	{}
+	class ShapeInfo
+	{
+	public:
+		ShapeInfo(GLuint c, GLuint h, void * d, GLuint s, GLuint ne, GLuint t, GLuint n) :
+			channel_number(c), handle(h), data(d),
+			sizeof_element(s), number_of_elements(ne), type(t),
+			number_of_type(n)
+		{
+		}
+
+		GLuint channel_number;
+		GLuint handle;
+		void * data;
+		GLuint sizeof_element;
+		GLuint number_of_elements;
+		GLuint type;
+		GLuint number_of_type;
+	};
+
+	enum
+	{
+		VERTICES = 0,
+		COLORS,
+		NORMALS,
+		TEXTURE_COORDINATES,
+		LAST_VALUE
+	};
+
+	Shape() {}
 
 	virtual void Draw(bool draw_normals = false) = 0;
 
 protected:
+	std::vector<ShapeInfo> si;
 	virtual bool CommonGLInitialization();
 	virtual bool PreGLInitialize() = 0;
 	virtual void NonGLTakeDown() = 0;
@@ -41,20 +59,19 @@ protected:
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec4> colors;
 	std::vector<glm::vec3> normals;
+	std::vector<glm::vec2> textures;
 	std::vector<GLuint> indices;
 	std::vector<glm::vec3> normal_visualization_coordinates;
 
-	GLuint vertex_values_handle;
-	GLuint color_values_handle;
-	GLuint normal_values_handle;
 	GLuint vertex_array_handle;
+	GLuint index_array_handle;
 
 	GLuint normal_array_handle;
 	GLuint normal_visualization_handle;
 
 	bool GLReturnedError(char * s);
 
-	glm::vec3 RandomColor(float min = 0.0f , float max = 1.0);
+	glm::vec4 RandomColor(glm::vec4 & previous_color, float min = -0.1f , float max = 0.1f);
 
 	inline float Random(float min , float max)
 	{
