@@ -16,4 +16,7 @@ protected:
 	float inner_radius;
 	float outer_radius;
 	bool is_partial_span;
+
+private:
+	bool is_fan;
 };
