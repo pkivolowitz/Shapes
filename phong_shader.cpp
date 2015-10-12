@@ -20,7 +20,7 @@ void PhongShader::Use(mat4 &model_matrix, mat4 &view_matrix, mat4 &projection_ma
 	block->mv_matrix = view_matrix * model_matrix;
 	block->view_matrix = view_matrix;
 	block->proj_matrix = projection_matrix;
-	block->normal_matrix = inverse(transpose(mat3(view_matrix * model_matrix)));
+	block->normal_matrix = inverse(transpose(mat3(block->mv_matrix)));
 //	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	this->GLReturnedError("PhongShader::Use() - exiting");
 }
@@ -35,6 +35,12 @@ void PhongShader::UnUse()
 	this->GLReturnedError("PhongShader::UnUse() - exiting");
 }
 
+void PhongShader::SetLightPosition(glm::vec3 light_position)
+{
+	assert(this->is_used == true);
+	glUniform3fv(uniforms.light_position, 1, (GLfloat *)(&light_position));
+}
+
 void PhongShader::CustomSetup()
 {
 	glGenBuffers(1, &this->uniforms_buffer);
@@ -42,6 +48,7 @@ void PhongShader::CustomSetup()
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(uniforms_block), NULL, GL_DYNAMIC_DRAW);
 
 	Shader::Use();
+	uniforms.light_position = glGetUniformLocation(this->program_id, "light_position");
 	uniforms.diffuse_albedo = glGetUniformLocation(this->program_id, "diffuse_albedo");
 	uniforms.specular_albedo = glGetUniformLocation(this->program_id, "specular_albedo");
 	uniforms.specular_power = glGetUniformLocation(this->program_id, "specular_power");
