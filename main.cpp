@@ -4,11 +4,15 @@
 #include "cylinder.h"
 #include "phong_shader.h"
 #include "constant_shader.h"
+#include "ilcontainer.h"
+#include "instance.h"
 
 using namespace std;
 using namespace glm;
 
+//#define	FULL_SCREEN
 #define	MOVE
+//#define	SHOW_NORMALS
 
 #ifdef USE_STEREO
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_STEREO)
@@ -16,49 +20,18 @@ using namespace glm;
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH)
 #endif // USE_STEREO
 
-inline float Random(float min, float max)
-{
-	return float(rand()) / float(RAND_MAX) * (max - min) + min;
-}
-
-class Instance
-{
-public:
-	Instance(vec3 p, float o, float r, vec3 d) : position(p), offset(o), rate(r), diffuse(d) {};
-
-	vec3 position;
-	float offset;
-	float rate;
-	vec3 diffuse;
-};
-
 vector<Instance> instances;
 
-void DefineInstances(int n = 32)
-{
-	float d = 8.0f;
-
-	for (int i = 0; i < n; i++)
-	{
-		vec3 diffuse(Random(0.2f, 1.0f), Random(0.2f, 1.0f), Random(0.2f, 1.0f));
-		instances.push_back(Instance(
-				vec3(Random(-d, d), Random(-d, d), Random(-d, d)), 
-				Random(0.0f, pi<float>() * 2.0f), 
-				Random(-360.0f, 360.0f), 
-				diffuse));
-	}
-	instances[0].position = vec3();
-	instances[0].rate = 60.0f;
-}
-
-Disc disc1(32, pi<float>() * 1.5f, 0.25f, 0.125f);
-Disc disc2(32, pi<float>() * 2.0f , 0.25f , 0.0f);
-Cylinder cylinder(72, 1, pi<float>() * 2.0f);
-
-string exit_string = "Hit enter to exit:";
+Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
+Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
+Cylinder cylinder(64, 4, pi<float>() * 2.0f, 1.0f, 0.2f);
+vec3 eye(0.0f, 0.0f, 15.0f);
+vec3 cop(0.0f, 0.0f, 0.0f);
+vec3 up(0.0f, 1.0f, 0.0f);
 
 PhongShader phong_shader;
 ConstantShader constant_shader;
+vector<ShaderInitializer> shaders;
 
 struct Window
 {
@@ -114,25 +87,12 @@ void KeyboardFunc(unsigned char c, int x, int y)
 	}
 }
 
-void TimerFunc(int param)
-{
-	if (window.handle != BAD_GL_VALUE)
-	{
-		glutTimerFunc(param, TimerFunc, param);
-		glutPostRedisplay();
-	}
-}
-
-vec3 eye(0.0f, 0.0f, 12.0f);
-vec3 cop(0.0f, 0.0f, 0.0f);
-vec3 up(0.0f, 1.0f, 0.0f);
-
 void DrawScene()
 {
 	phong_shader.GLReturnedError("DrawScene() - entering");
 #ifdef MOVE
 	mat4 m = rotate(mat4() , radians(window.current_time * 30.0f) , vec3(0.0f , 1.0f , 0.2f));
-	m = translate(m, vec3(0.0f, 0.0f, 11.5f * cos(window.current_time * 0.25f)));
+	m = translate(m, vec3(0.0f, 11.5f * cos(window.current_time * 0.5f) + 2.0f, 11.5f * sin(window.current_time * 0.5f) + 2.0f));
 #else
 	mat4 m;
 #endif // MOVE
@@ -143,7 +103,7 @@ void DrawScene()
 
 	vec3 z_axis = vec3(0.0f, 0.0f, 1.0f);
 	vec3 y_axis = vec3(0.0f, 1.0f, 0.0f);
-	vec3 ambient = vec3(0.0f, 0.0f, 0.0f);
+	vec3 ambient = vec3(0.1f, 0.1f, 0.1f);
 	vec3 specular = vec3(1.0f, 1.0f, 1.0f);
 	float c_offset = radians(45.0f);
 
@@ -156,38 +116,57 @@ void DrawScene()
 		model_matrix = rotate(model_matrix, c_offset, z_axis);
 
 		phong_shader.Use(model_matrix, view_matrix, projection_matrix);
-		phong_shader.SetMaterial(instances[i].diffuse, specular, 64.0f, ambient);
+		phong_shader.SetMaterial(instances[i].diffuse, specular, 32.0f, ambient);
+		phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 		if (i % 2 == 0)
 			disc1.Draw(false);
 		else
 			disc2.Draw(false);
 		phong_shader.UnUse();
-		phong_shader.GLReturnedError("DrawScene() - after first unuse");
 
+		#ifdef SHOW_NORMALS
 		if (i == 0)
 		{
 			constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-			constant_shader.SetMaterial(vec3(1.0f, 0.0f, 0.0f));
+			constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 0.0f, 0.0f));
 			disc1.Draw(true);
 			constant_shader.UnUse();
 		}
+		#endif
 	}
 
 	model_matrix = mat4();
-	model_matrix = rotate(model_matrix, radians(window.current_time * instances[0].rate) + instances[0].offset, y_axis);
+	mat4 mz = model_matrix;
+	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
 
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
-	phong_shader.SetMaterial(instances[0].diffuse, specular, 64.0f, ambient);
+	phong_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, ambient);
+	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder.Draw(false);
 	phong_shader.UnUse();
-	phong_shader.GLReturnedError("DrawScene() - after second unuse");
 
+#ifdef SHOW_NORMALS
 	constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-	constant_shader.SetMaterial(vec3(0.0f, 1.0f, 0.0f));
+	constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 1.0f, 1.0f));
 	cylinder.Draw(true);
 	constant_shader.UnUse();
+#endif
 
+	model_matrix = rotate(mz, radians(90.0f), y_axis);
+	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
+	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+	phong_shader.SetMaterial(vec3(1.0f, 0.0f, 0.0f), specular, 128.0f, ambient);
+	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
+	cylinder.Draw(false);
+	phong_shader.UnUse();
 
+	model_matrix = rotate(mz, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
+	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
+	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+	phong_shader.SetMaterial(vec3(0.0f, 1.0f, 0.0f), specular, 128.0f, ambient);
+	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
+	cylinder.Draw(false);
+	phong_shader.UnUse();
 }
 
 void DisplayFunc()
@@ -213,56 +192,54 @@ void IdleFunc()
 
 int main(int argc, char * argv[])
 {
+	window.fovy = 50.0f;
+	window.near_distance = 0.1f;
+	window.far_distance = 50.0f;
+
 	srand(unsigned int(time(NULL)));
+	// glutInit must be the first thing to use OpenGL
 	glutInit(&argc, argv);
+	// Initializes the Develeoper's Imaging Library
+	ilInit();
+	// Add a line here for every shader defined. This will
+	// take care of loading and unloading.
+	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
+	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
+	// Adds objects to the world.
+	Instance::DefineInstances(instances, 150);
+
 	glutInitWindowSize(512, 512);
 	glutInitWindowPosition(-1, -1);
 	glutInitDisplayMode(DISPLAY_MODE);
 
 	window.handle = glutCreateWindow("Basic Shape Viewer");
-	window.fovy = 60.0f;
-	window.near_distance = 0.1f;
-	window.far_distance = 50.0f;
 
+#ifdef FULL_SCREEN
 	glutFullScreen();
+#endif
+
 	glutReshapeFunc(ReshapeFunc);
 	glutCloseFunc(CloseFunc);
 	glutDisplayFunc(DisplayFunc);
 	glutKeyboardFunc(KeyboardFunc);
 	glutIdleFunc(IdleFunc);
-	//glutTimerFunc(1000 / 60, TimerFunc, 1000 / 60);
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION);
 
+	// This must be called AFTER an OpenGL context has been built.
 	if (glewInit() != GLEW_OK)
 	{
 		cerr << "GLEW failed to initialize." << endl;
-		cerr << exit_string;
+		cerr << "Hit enter to exit:";
 		cin.get();
 		return 0;
 	}
 
-	if (!phong_shader.Initialize("per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl"))
-	{
-		cerr << "Phong shader failed to initialize." << endl;
-		cerr << exit_string;
-		cin.get();
-		return 0;
-	}
-
-	if (!constant_shader.Initialize("constant.vs.glsl", "constant.fs.glsl"))
-	{
-		cerr << "Phong shader failed to initialize." << endl;
-		cerr << exit_string;
-		cin.get();
-		return 0;
-	}
-
-	phong_shader.CustomSetup();
-	constant_shader.CustomSetup();
-
-	DefineInstances(100);
+	if (!ShaderInitializer::Initialize(&shaders))
+		exit(0);
 
 	glutMainLoop();
+
+	ShaderInitializer::TakeDown(&shaders);
 	return 0;
 }
 
