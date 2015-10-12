@@ -10,6 +10,7 @@ Updates:	9/29/15		Refreshed.
 */
 
 #include "shader.h"
+#include <vector>
 #include <assert.h>
 
 using namespace std;
@@ -51,7 +52,7 @@ void Shader::UnUse()
 /*	The shader initialization code is lifted liberally from the GLSL 4.0 Cookbook.
 */
 
-bool Shader::Initialize(char * vertex_shader_file, char * fragment_shader_file)
+bool Shader::Initialize(string vertex_shader_file, string fragment_shader_file)
 {
 	GLint check_value;
 
@@ -124,14 +125,14 @@ void Shader::TakeDown()
 This function is adapted from OpenGL 4.0 Shading Language Cookbook by David Wolff.
 */
 
-bool Shader::LoadShader(const char * file_name, GLuint shader_id)
+bool Shader::LoadShader(string file_name, GLuint shader_id)
 {
 	assert(file_name != NULL);
 	if (GLReturnedError("Shader::LoadShader - on entrance"))
 		return false;
 
 	FILE * file_handle = NULL;
-	fopen_s(&file_handle, file_name, "rb");
+	fopen_s(&file_handle, file_name.c_str(), "rb");
 	if (file_handle == NULL)
 	{
 		cerr << "Cannot open shader: " << file_name << endl;
@@ -186,4 +187,29 @@ bool Shader::GLReturnedError(char * s)
 #endif // _DEBUG
 
 	return return_error;
+}
+
+
+bool ShaderInitializer::Initialize(vector<ShaderInitializer> * shaders)
+{
+	for (vector<ShaderInitializer>::iterator i = shaders->begin(); i < shaders->end(); i++)
+	{
+		if (!(*i).shader->Initialize((*i).vertex_shader_file_name, (*i).fragment_shader_file_name))
+		{
+			cerr << (*i).error_string << endl;
+			cerr << "Hit enter to exit:";
+			cin.get();
+			return false;
+		}
+		(*i).shader->CustomSetup();
+	}
+	return true;
+}
+
+void ShaderInitializer::TakeDown(vector<ShaderInitializer> * shaders)
+{
+	for (vector<ShaderInitializer>::iterator i = shaders->begin(); i < shaders->end(); i++)
+	{
+		(*i).shader->TakeDown();
+	}
 }
