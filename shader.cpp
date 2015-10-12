@@ -127,7 +127,7 @@ This function is adapted from OpenGL 4.0 Shading Language Cookbook by David Wolf
 
 bool Shader::LoadShader(string file_name, GLuint shader_id)
 {
-	assert(file_name != NULL);
+	assert(file_name.length() > 0);
 	if (GLReturnedError("Shader::LoadShader - on entrance"))
 		return false;
 
