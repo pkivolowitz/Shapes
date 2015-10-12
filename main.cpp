@@ -2,6 +2,7 @@
 #include <time.h>
 #include "disc.h"
 #include "cylinder.h"
+#include "plane.h"
 #include "phong_shader.h"
 #include "constant_shader.h"
 #include "ilcontainer.h"
@@ -24,7 +25,8 @@ vector<Instance> instances;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Cylinder cylinder(64, 4, pi<float>() * 2.0f, 1.0f, 0.2f);
+Cylinder cylinder(64, 8, pi<float>() * 2.0f, 2.0f, 0.1f);
+Plane plane(8 , 8);
 vec3 eye(0.0f, 0.0f, 15.0f);
 vec3 cop(0.0f, 0.0f, 0.0f);
 vec3 up(0.0f, 1.0f, 0.0f);
@@ -113,15 +115,19 @@ void DrawScene()
 	{
 		model_matrix = translate(mat4(), instances[i].position);
 		model_matrix = rotate(model_matrix, radians(window.current_time * instances[i].rate) + instances[i].offset, y_axis);
-		model_matrix = rotate(model_matrix, c_offset, z_axis);
+		if (i % 3 != 2)
+			model_matrix = rotate(model_matrix, c_offset, z_axis);
 
 		phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 		phong_shader.SetMaterial(instances[i].diffuse, specular, 32.0f, ambient);
 		phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
-		if (i % 2 == 0)
+		if (i % 3 == 0)
 			disc1.Draw(false);
-		else
+		else if (i % 3 == 1)
 			disc2.Draw(false);
+		else
+			plane.Draw(false);
+
 		phong_shader.UnUse();
 
 		#ifdef SHOW_NORMALS
