@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include "cylinder.h"
 
+// Leave this defined until RecomputeNormals is
+// written to support QUADS. 
 #define	TRIANGLES
 
 using namespace std;
@@ -80,8 +82,8 @@ bool Cylinder::PreGLInitialize()
 	vec3 scale_factor_for_normals(f, f, 1.0f);
 
 	int real_number_of_slices = this->slices + (this->is_partial_span ? 1 : 0);
-	this->vertices.reserve(real_number_of_slices * (this->stacks + 1));
-	this->normals.reserve(real_number_of_slices * (this->stacks + 1));
+	this->data.vertices.reserve(real_number_of_slices * (this->stacks + 1));
+	this->data.normals.reserve(real_number_of_slices * (this->stacks + 1));
 
 	mat4 m = translate(mat4(), vec3(0.0f, 0.0f, -0.5f));
 
@@ -119,14 +121,14 @@ bool Cylinder::PreGLInitialize()
 			//
 			// The s value is computed above and varies only with each stack.
 			tc = vec2(tc.s , i / float(real_number_of_slices));
-			this->textures.push_back(tc);
+			this->data.textures.push_back(tc);
 
 			vec3 n = vec3(m3 * rotated_y_axis);
-			this->vertices.push_back(vec3(m2 * p));
-			this->normals.push_back(n);
-			this->colors.push_back(this->RandomColor((i > 0 ? *(this->colors.end() - 1) : vec4(0.5f, 0.5f, 0.5f, 1.0f)), -0.2f, 0.2f));
-			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1) * e);
-			this->normal_visualization_coordinates.push_back(*(this->vertices.end() - 1) + n / 6.0f);
+			this->data.vertices.push_back(vec3(m2 * p));
+			this->data.normals.push_back(n);
+			this->data.colors.push_back(this->RandomColor((i > 0 ? *(this->data.colors.end() - 1) : vec4(0.5f, 0.5f, 0.5f, 1.0f)), -0.2f, 0.2f));
+			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1) * e);
+			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1) + n / 6.0f);
 			m2 = rotate(m2, theta, z_axis);
 			m3 = rotate(m3, theta, z_axis);
 		}
@@ -143,14 +145,15 @@ bool Cylinder::PreGLInitialize()
 		for (int i = 0; i < this->slices; i++)
 		{
 			#ifdef TRIANGLES
-			// First
-			this->indices.push_back(j * real_number_of_slices + i);
-			this->indices.push_back((j + 1) * real_number_of_slices + i);
-			this->indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
-			// Second
-			this->indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
-			this->indices.push_back((j + 1) * real_number_of_slices + i);
-			this->indices.push_back((j + 1) * real_number_of_slices + (i + 1) % real_number_of_slices);
+			// The winding is clockwise.
+			// First or Top triangle
+			this->data.indices.push_back(j * real_number_of_slices + i);
+			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
+			this->data.indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
+			// Second or Bottom triangle
+			this->data.indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
+			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
+			this->data.indices.push_back((j + 1) * real_number_of_slices + (i + 1) % real_number_of_slices);
 			#else
 			this->indices.push_back(j * real_number_of_slices + i);
 			this->indices.push_back((j + 1) * real_number_of_slices + i);
@@ -159,7 +162,13 @@ bool Cylinder::PreGLInitialize()
 			#endif
 		}
 	}
+	this->data.vbackup = this->data.vertices;
 	return true;
+}
+
+void Cylinder::RecomputeNormals()
+{
+
 }
 
 void Cylinder::NonGLTakeDown()
@@ -169,22 +178,22 @@ void Cylinder::NonGLTakeDown()
 
 void Cylinder::Draw(bool draw_normals)
 {
-	if (this->vertices.size() == 0)
+	if (this->data.vertices.size() == 0)
 	{
 		this->PreGLInitialize();
 		this->CommonGLInitialization();
 	}
 
-	if (draw_normals && this->normal_visualization_coordinates.size() > 0)
+	if (draw_normals && this->data.normal_visualization_coordinates.size() > 0)
 	{
 		glBindVertexArray(this->normal_array_handle);
-		glDrawArrays(GL_LINES, 0, this->normal_visualization_coordinates.size());
+		glDrawArrays(GL_LINES, 0, this->data.normal_visualization_coordinates.size());
 	}
 	else
 	{
 		glBindVertexArray(this->vertex_array_handle);
 		#ifdef TRIANGLES
-		glDrawElements(GL_TRIANGLES , this->indices.size() , GL_UNSIGNED_INT , nullptr);
+		glDrawElements(GL_TRIANGLES , this->data.indices.size() , GL_UNSIGNED_INT , nullptr);
 		#else
 		glDrawElements(GL_QUADS, this->indices.size(), GL_UNSIGNED_INT, nullptr);
 		#endif

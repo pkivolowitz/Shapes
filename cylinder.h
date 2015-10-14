@@ -10,6 +10,7 @@ public:
 protected:
 	bool PreGLInitialize();
 	void NonGLTakeDown();
+	void RecomputeNormals();
 
 	int slices;
 	int stacks;

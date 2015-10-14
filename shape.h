@@ -16,6 +16,22 @@
 class Shape
 {
 public:
+
+	// UpdateValues() needs access to all these - by wrapping them in this struct we
+	// can pass the struct's address rather than all these individually.
+	struct Data
+	{
+		std::vector<glm::vec3> vertices;
+		std::vector<glm::vec3> vbackup;
+		std::vector<glm::vec4> colors;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> textures;
+		std::vector<GLuint> indices;
+		std::vector<glm::vec3> normal_visualization_coordinates;
+	};
+
+	// This class allows all the vertex attributes to be initialized in a loop
+	// rather than one at a time.
 	class ShapeInfo
 	{
 	public:
@@ -47,25 +63,33 @@ public:
 	Shape() {}
 
 	virtual void Draw(bool draw_normals = false) = 0;
+	virtual void UpdateValues(void(*Update)(struct Data & data));
 
 protected:
 	std::vector<ShapeInfo> si;
+	// This is the OpenGL code provided by this base class responsible
+	// for hooking up the user's data to OpenGL.
 	virtual bool CommonGLInitialization();
+	// This is where the user will initialize their data structures including
+	// their vertex attribute arrays.
 	virtual bool PreGLInitialize() = 0;
 	virtual void NonGLTakeDown() = 0;
+	// RecomputeNormals will be called after the user's callback
+	// called by UpdateValues. The idea is that the user's callback
+	// moves around the vertices, then RecomputeNormals adjusts the
+	// normals to be right again. It must be implemented in each shape
+	// because that programmer knows how the vertices are connected
+	// (which is the basis of recomputing).
+	virtual void RecomputeNormals() = 0;
 	virtual bool PostGLInitialize();
 	virtual void GLTakeDown();
 
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec4> colors;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec2> textures;
-	std::vector<GLuint> indices;
-	std::vector<glm::vec3> normal_visualization_coordinates;
+	// All the goodies have been moved into a struct so as to make it more convenient to
+	// pass around in UpdateValues(). 
+	struct Data data;
 
 	GLuint vertex_array_handle;
 	GLuint index_array_handle;
-
 	GLuint normal_array_handle;
 	GLuint normal_visualization_handle;
 
