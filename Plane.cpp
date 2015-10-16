@@ -117,6 +117,9 @@ bool Plane::PreGLInitialize()
 			this->data.indices.push_back(i + 1);
 			this->data.indices.push_back(i + divisionsX + 1);
 			// Bottom triangle
+			this->data.indices.push_back(i + 1);
+			this->data.indices.push_back(i + divisionsX + 2);
+			this->data.indices.push_back(i + divisionsX + 1);
 			i++;
 		}
 		i++;
