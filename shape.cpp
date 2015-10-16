@@ -81,9 +81,9 @@ glm::vec4 Shape::RandomColor(vec4 & previous_color, float min , float max)
 	return clamp(vec4(Random(min , max) , Random(min , max) , Random(min , max), 1.0f) + previous_color, vec4(0.0f) , vec4(1.0f));
 }
 
-void Shape::UpdateValues(void(*Update)(struct Data & data))
+void Shape::UpdateValues(void(*Update)(struct Data & data, float current_time, void * blob), float current_time, void * blob)
 {
-	(*Update)(this->data);
+	(*Update)(this->data, current_time, blob);
 	this->RecomputeNormals();
 
 	glBindVertexArray(vertex_array_handle);

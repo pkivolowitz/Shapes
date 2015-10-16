@@ -25,6 +25,12 @@ public:
 	void(*ReshapeFunc)(int w , int h);
 	void(*CloseFunc)();
 
+
+	float LocalTime()
+	{
+		return Window::current_time - this->time_spent_paused;
+	}
+
 	char * window_name;
 	GLuint handle;
 	glm::ivec2 size;
@@ -33,4 +39,7 @@ public:
 	float fovy;
 	float near_distance;
 	float far_distance;
+	float time_spent_paused;
+	float time_when_paused;
+	bool is_paused;
 };

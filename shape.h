@@ -63,9 +63,10 @@ public:
 	Shape() {}
 
 	virtual void Draw(bool draw_normals = false) = 0;
-	virtual void UpdateValues(void(*Update)(struct Data & data));
+	virtual void UpdateValues(void(*Update)(struct Data & data, float current_time, void * blob), float current_time, void * blob);
 
 protected:
+
 	std::vector<ShapeInfo> si;
 	// This is the OpenGL code provided by this base class responsible
 	// for hooking up the user's data to OpenGL.

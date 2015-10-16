@@ -28,7 +28,7 @@ freetype::font_data our_font;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Disc disc3(64 , pi<float>() * 2.0f , 1.0f , 0.125);
+Disc disc3(64 , pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(64, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(64 , 8 , pi<float>() * 2.0f , 1.0f , 1.0f);
 Plane plane1(8 , 8);
@@ -42,12 +42,24 @@ PhongShader phong_shader;
 ConstantShader constant_shader;
 vector<ShaderInitializer> shaders;
 vector<Window> windows;
+vector<ILContainer> textures;
+vector<string> texture_file_names;
 
-void TestUpdate(struct Shape::Data & data)
+inline void UpdateTime()
+{
+	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+}
+
+void TestUpdateDisc(struct Shape::Data & data , float current_time, void * blob)
+{
+
+}
+
+void TestUpdate(struct Shape::Data & data, float current_time, void * blob)
 {
 	data.vertices = data.vbackup;
 	for (vector<vec3>::iterator iter = data.vertices.begin(); iter < data.vertices.end(); iter++)
-		(*iter) = (*iter) * vec3(1.0f, cos(Window::current_time) + 1.01f, 1.0f);
+		(*iter) = (*iter) * vec3(1.0f, cos(current_time) + 1.01f, 1.0f);
 }
 /*
 void measure_text(font_t* font, const char* msg, float* width, float* height) {
@@ -150,6 +162,23 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 	switch (c)
 	{
+		case 'p':
+			window->is_paused = !window->is_paused;
+			UpdateTime();
+			if (window->is_paused)
+			{
+				// We have just been paused. Store away the current time.
+				window->time_when_paused = Window::current_time;
+			}
+			else
+			{
+				// We have just been unpaused. Add the elapsed time since
+				// we were paused to the total time spent paused. This will
+				// be subtracted from future gets of the current time.
+				window->time_spent_paused += (Window::current_time - window->time_when_paused);
+			}
+			break;
+
 		case '+':
 			window->fovy++;
 			if (window->fovy > 90.0f)
@@ -177,8 +206,8 @@ void DrawScene(Window * window)
 {
 	phong_shader.GLReturnedError("DrawScene() - entering");
 #ifdef MOVE
-	mat4 m = rotate(mat4() , radians(Window::current_time * 30.0f) , vec3(0.0f , 1.0f , 0.2f));
-	m = translate(m, vec3(0.0f, 11.5f * cos(Window::current_time * 0.5f) + 2.0f, 11.5f * sin(Window::current_time * 0.5f) + 2.0f));
+	mat4 m = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.2f));
+	m = translate(m, vec3(0.0f, 11.5f * cos(window->LocalTime() * 0.5f) + 2.0f, 11.5f * sin(window->LocalTime() * 0.5f) + 2.0f));
 #else
 	mat4 m;
 #endif // MOVE
@@ -200,7 +229,7 @@ void DrawScene(Window * window)
 	for (unsigned int i = 0; i < instances.size(); i++)
 	{
 		model_matrix = translate(mat4(), instances[i].position);
-		model_matrix = rotate(model_matrix, radians(Window::current_time * instances[i].rate) + instances[i].offset, y_axis);
+		model_matrix = rotate(model_matrix, radians(window->LocalTime() * instances[i].rate) + instances[i].offset, y_axis);
 		if (i % count_of_shapes == 3)
 			model_matrix = scale(model_matrix, vec3(0.25f, 0.25f, 0.25f));
 
@@ -269,7 +298,7 @@ void DrawScene(Window * window)
 	cylinder1.Draw(false);
 	phong_shader.UnUse();
 
-	cylinder1.UpdateValues(TestUpdate);
+	cylinder1.UpdateValues(TestUpdate, window->LocalTime(), nullptr);
 }
 
 void DisplayCube()
@@ -277,6 +306,7 @@ void DisplayCube()
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
 		return;
+
 	glViewport(0, 0, window->size.x, window->size.y);
 	vec4 crimson(0.6f, 0.0f, 0.0f, 1.0f);
 	vec3 ambient = vec3(0.1f, 0.1f, 0.1f);
@@ -287,7 +317,7 @@ void DisplayCube()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4(), radians(Window::current_time * 30.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(0.0f, 1.0f, 0.0f));
 	model_matrix = rotate(model_matrix, radians(45.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = scale(model_matrix, vec3(0.7f, 0.7f, 0.7f));
 	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
@@ -305,6 +335,7 @@ void DisplayDisc()
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
 		return;
+
 	glViewport(0, 0, window->size.x, window->size.y);
 	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
@@ -315,7 +346,7 @@ void DisplayDisc()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(Window::current_time * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
@@ -325,6 +356,7 @@ void DisplayDisc()
 	disc3.Draw(false);
 	phong_shader.UnUse();
 	glutSwapBuffers();
+	disc3.UpdateValues(TestUpdateDisc , window->LocalTime(), nullptr);
 }
 
 void DisplayPlane()
@@ -343,7 +375,7 @@ void DisplayPlane()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(Window::current_time * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
@@ -360,6 +392,7 @@ void DisplayCylinder()
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
 		return;
+
 	glViewport(0, 0, window->size.x, window->size.y);
 
 	vector<string> strings;
@@ -374,7 +407,7 @@ void DisplayCylinder()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(Window::current_time * 30.0f) , vec3(0.0f, 1.0f, 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f, 1.0f, 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -399,22 +432,25 @@ void DisplayFunc()
 
 	glPolygonMode(GL_FRONT_AND_BACK , (window->wireframe ? GL_LINE : GL_FILL));
 
-	if (window->DisplayFunc != nullptr)
+	if (!window->is_paused)
 	{
-		window->DisplayFunc();
-		return;
-	}
+		if (window->DisplayFunc != nullptr)
+		{
+			window->DisplayFunc();
+			return;
+		}
 
-	#ifdef STEREO
-	glDrawBuffer(GL_BACK);
-	#endif
-	glClearColor(crimson.r, crimson.g, crimson.b, crimson.a);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
-	//glEnable(GL_CULL_FACE);
-	DrawScene(window);
-	glutSwapBuffers();
+		#ifdef STEREO
+		glDrawBuffer(GL_BACK);
+		#endif
+		glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
+		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glFrontFace(GL_CW);
+		//glEnable(GL_CULL_FACE);
+		DrawScene(window);
+		glutSwapBuffers();
+	}
 }
 
 void IdleFunc()
@@ -465,6 +501,21 @@ int main(int argc, char * argv[])
 	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
 	InitializeWindows();
 	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
+	texture_file_names.push_back("DSC_0337.jpg");
+	texture_file_names.push_back("DSC_0338.jpg");
+	texture_file_names.push_back("DSC_1233.jpg");
+	texture_file_names.push_back("DSC_1623.jpg");
+
+	textures.resize(texture_file_names.size());
+	for (size_t i = 0; i < texture_file_names.size(); i++)
+	{
+		if (textures[i].Initialize(texture_file_names[i].c_str()) == false)
+		{
+			cerr << "Failed to load texture: " << texture_file_names[i] << endl;
+			return false;
+		}
+	}
+	// Then, enable texturing, bind texture unit, bind texture and away you go.
 
 #ifdef FULL_SCREEN
 	glutFullScreen();
