@@ -47,6 +47,7 @@ bool Disc::PreGLInitialize()
 		this->is_fan = true;
 		// Add center as first point so that triangle fan can be used.
 		this->data.vertices.push_back(vec3(0.0f, 0.0f, 0.0f));
+		this->data.textures.push_back(vec2(0.0f , 0.0f));
 		this->data.colors.push_back(this->RandomColor(vec4(0.5f, 0.5f, 0.5f, 1.0f)));
 		this->data.normals.push_back(n);
 		this->data.normal_visualization_coordinates.push_back(vec3(0.0f, 0.0f, epsilon<float>()));
@@ -57,6 +58,7 @@ bool Disc::PreGLInitialize()
 	for (int i = 0; i < real_number_of_slices; i++)
 	{
 		this->data.vertices.push_back(vec3(m * p));
+		this->data.textures.push_back(vec2(p) / (this->outer_radius * 2.0f) + vec2(0.5f , 0.5f));
 		this->data.normals.push_back(n);
 		this->data.colors.push_back(this->RandomColor(vec4(0.5f, 0.5f, 0.5f, 1.0f), -0.3f, 0.3f));
 		this->data.normal_visualization_coordinates.push_back(vec3(m * p) + vec3(0.0f, 0.0f, 0.001f));
@@ -82,6 +84,7 @@ bool Disc::PreGLInitialize()
 		for (int i = 0; i < real_number_of_slices; i++)
 		{
 			this->data.vertices.push_back(vec3(m * p));
+			this->data.textures.push_back(vec2(p) / (this->inner_radius * 2.0f) + vec2(0.5f , 0.5f));
 			this->data.normals.push_back(n);
 			this->data.colors.push_back(this->RandomColor(vec4(0.5f, 0.5f, 0.5f, 1.0f)));
 			this->data.normal_visualization_coordinates.push_back(vec3(m * p) + vec3(0.0f, 0.0f, 0.001f));
@@ -114,7 +117,27 @@ void Disc::NonGLTakeDown()
 
 void Disc::RecomputeNormals()
 {
-
+	vec3 sum;
+	vec3 A;
+	vec3 B;
+	if (this->inner_radius == 0.0f)
+	{
+		for (unsigned int i = 0; i < this->data.vertices.size() - 1; i++)
+		{
+			if (i != data.vertices.size() - 2)
+			{
+				//cross product between each set of verticies and find average
+				A = (this->data.vertices[0] - this->data.vertices[i + 2]);
+				B = (this->data.vertices[0] - this->data.vertices[i + 1]);
+			}
+			else{
+				A = (this->data.vertices[0] - this->data.vertices[1]);
+				B = (this->data.vertices[0] - this->data.vertices[i + 1]);
+			}
+			sum += cross(A , B);
+		}
+		this->data.normals[0] = sum / float(this->data.vertices.size());
+	}
 }
 
 void Disc::Draw(bool draw_normals)
