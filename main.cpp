@@ -28,7 +28,7 @@ freetype::font_data our_font;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Disc disc3(64 , pi<float>() * 2.0f , 1.0f , 0.0f);
+Disc disc3(256 , pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(64, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(64 , 8 , pi<float>() * 2.0f , 1.0f , 1.0f);
 Plane plane1(8 , 8);
@@ -52,7 +52,12 @@ inline void UpdateTime()
 
 void TestUpdateDisc(struct Shape::Data & data , float current_time, void * blob)
 {
-
+	data.vertices = data.vbackup;
+	float theta = (2 * pi<float>()) / (data.vertices.size() - 1);
+	for (size_t i = 0; i < data.vertices.size() - 1; i++)
+	{
+		data.vertices[i+1] = vec3(data.vertices[i + 1].x, data.vertices[i + 1].y, sin(theta*i * 10 + current_time * 4.0f) / 10.0f);
+	}
 }
 
 void TestUpdate(struct Shape::Data & data, float current_time, void * blob)
@@ -346,7 +351,7 @@ void DisplayDisc()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(0.0f) /*window->LocalTime() * 30.0f)*/ , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
