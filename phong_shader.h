@@ -13,18 +13,13 @@ public:
 	void CustomSetup();
 
 private:
-	GLuint uniforms_buffer;
-
-	struct uniforms_block
-	{
-		glm::mat4 mv_matrix;
-		glm::mat4 view_matrix;
-		glm::mat4 proj_matrix;
-		glm::mat3 normal_matrix;
-	};
 
 	struct
 	{
+		GLuint modelview_matrix;
+		GLuint view_matrix;
+		GLuint normal_matrix;
+		GLuint projection_matrix;
 		GLuint diffuse_albedo;
 		GLuint specular_albedo;
 		GLuint specular_power;

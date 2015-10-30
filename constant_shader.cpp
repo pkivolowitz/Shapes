@@ -15,31 +15,25 @@ void ConstantShader::Use(mat4 &model_matrix, mat4 &view_matrix, mat4 &projection
 {
 	this->GLReturnedError("ConstantShader::Use() - entering");
 	Shader::Use();
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, this->uniforms_buffer);
-	uniforms_block * block = (uniforms_block *) glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(uniforms_block), GL_MAP_WRITE_BIT);
-	block->mv_matrix = view_matrix * model_matrix;
-	block->proj_matrix = projection_matrix;
-//	glUnmapBuffer(GL_UNIFORM_BUFFER);
+	glUniformMatrix4fv(uniforms.mv_matrix , 1 , GL_FALSE , value_ptr(view_matrix * model_matrix));
+	glUniformMatrix4fv(uniforms.proj_matrix , 1 , GL_FALSE , value_ptr(projection_matrix));
 	this->GLReturnedError("ConstantShader::Use() - exiting");
 }
 
 void ConstantShader::UnUse()
 {
 	this->GLReturnedError("ConstantShader::UnUse() - entering");
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	Shader::UnUse();
 	this->GLReturnedError("ConstantShader::UnUse() - exiting");
 }
 
 void ConstantShader::CustomSetup()
 {
-	glGenBuffers(1, &this->uniforms_buffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, this->uniforms_buffer);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(uniforms_block), NULL, GL_DYNAMIC_DRAW);
-
 	Shader::Use();
 	uniforms.ambient = glGetUniformLocation(this->program_id, "ambient");
-	if (uniforms.ambient == BAD_GL_VALUE)
+	uniforms.mv_matrix = glGetUniformLocation(this->program_id , "mv_matrix");
+	uniforms.proj_matrix = glGetUniformLocation(this->program_id , "proj_matrix");
+	if (uniforms.ambient == BAD_GL_VALUE || uniforms.proj_matrix == BAD_GL_VALUE || uniforms.mv_matrix == BAD_GL_VALUE)
 		throw std::exception("one or more of the uniforms in the phong shader was not found");
 	Shader::UnUse();
 }

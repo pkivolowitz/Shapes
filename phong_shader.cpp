@@ -15,23 +15,23 @@ void PhongShader::Use(mat4 &model_matrix, mat4 &view_matrix, mat4 &projection_ma
 {
 	this->GLReturnedError("PhongShader::Use() - entering");
 	Shader::Use();
-	glBindBufferBase(GL_UNIFORM_BUFFER, 0, this->uniforms_buffer);
-	uniforms_block * block = (uniforms_block *) glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(uniforms_block), GL_MAP_WRITE_BIT);
-	block->mv_matrix = view_matrix * model_matrix;
-	block->view_matrix = view_matrix;
-	block->proj_matrix = projection_matrix;
-	block->normal_matrix = inverse(transpose(mat3(block->mv_matrix)));
-//	glUnmapBuffer(GL_UNIFORM_BUFFER);
+
+	// TO DO - TRY USING THE OLD WAY OF GETTING TO UNIFORMS - THIS SEEMS TO BE SLOWING ME DOWN.
+	mat4 modelview_matrix = view_matrix * model_matrix;
+	mat3 normal_matrix = normal_matrix = inverse(transpose(mat3(modelview_matrix)));
+
+	glUniformMatrix4fv(this->uniforms.modelview_matrix, 1, GL_FALSE, value_ptr(modelview_matrix));
+	glUniformMatrix4fv(this->uniforms.view_matrix , 1 , GL_FALSE , value_ptr(view_matrix));
+	glUniformMatrix4fv(this->uniforms.projection_matrix , 1 , GL_FALSE , value_ptr(projection_matrix));
+	glUniformMatrix3fv(this->uniforms.normal_matrix , 1 , GL_FALSE , value_ptr(normal_matrix));
+
 	this->GLReturnedError("PhongShader::Use() - exiting");
 }
 
 void PhongShader::UnUse()
 {
 	this->GLReturnedError("PhongShader::UnUse() - entering");
-
-	glUnmapBuffer(GL_UNIFORM_BUFFER);
 	Shader::UnUse();
-
 	this->GLReturnedError("PhongShader::UnUse() - exiting");
 }
 
@@ -43,18 +43,18 @@ void PhongShader::SetLightPosition(glm::vec3 light_position)
 
 void PhongShader::CustomSetup()
 {
-	glGenBuffers(1, &this->uniforms_buffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, this->uniforms_buffer);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(uniforms_block), NULL, GL_DYNAMIC_DRAW);
-
 	Shader::Use();
 	uniforms.light_position = glGetUniformLocation(this->program_id, "light_position");
 	uniforms.diffuse_albedo = glGetUniformLocation(this->program_id, "diffuse_albedo");
 	uniforms.specular_albedo = glGetUniformLocation(this->program_id, "specular_albedo");
 	uniforms.specular_power = glGetUniformLocation(this->program_id, "specular_power");
 	uniforms.ambient = glGetUniformLocation(this->program_id, "ambient");
-	if (uniforms.diffuse_albedo == BAD_GL_VALUE || uniforms.specular_albedo == BAD_GL_VALUE || uniforms.specular_power == BAD_GL_VALUE || uniforms.ambient == BAD_GL_VALUE)
-		throw std::exception("one or more of the uniforms in the phong shader was not found");
+	uniforms.modelview_matrix = glGetUniformLocation(this->program_id , "mv_matrix");
+	uniforms.view_matrix = glGetUniformLocation(this->program_id , "view_matrix");
+	uniforms.normal_matrix = glGetUniformLocation(this->program_id , "normal_matrix");
+	uniforms.projection_matrix = glGetUniformLocation(this->program_id , "proj_matrix");
+	//	if (uniforms.diffuse_albedo == BAD_GL_VALUE || uniforms.specular_albedo == BAD_GL_VALUE || uniforms.specular_power == BAD_GL_VALUE || uniforms.ambient == BAD_GL_VALUE)
+//		throw std::exception("one or more of the uniforms in the phong shader was not found");
 
 	Shader::UnUse();
 }

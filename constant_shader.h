@@ -12,16 +12,11 @@ public:
 	void CustomSetup();
 
 private:
-	GLuint uniforms_buffer;
-
-	struct uniforms_block
-	{
-		glm::mat4 mv_matrix;
-		glm::mat4 proj_matrix;
-	};
 
 	struct
 	{
+		GLuint mv_matrix;
+		GLuint proj_matrix;
 		GLuint ambient;
 	} uniforms;
 };
