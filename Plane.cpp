@@ -76,6 +76,8 @@ bool Cube::PreGLInitialize()
 
 	for (unsigned int i = 0; i < this->data.vertices.size(); i++)
 		this->data.indices.push_back(i);
+
+	this->data.vbackup = this->data.vertices;
 	return true;
 }
 
@@ -124,6 +126,7 @@ bool Plane::PreGLInitialize()
 		}
 		i++;
 	}
+	this->data.vbackup = this->data.vertices;
 	return true;
 }
 

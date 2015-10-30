@@ -47,7 +47,7 @@ bool Shape::CommonGLInitialization()
 	// base address of the index array (such as in DrawElements).
 	glGenBuffers(1, &this->index_array_handle);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->index_array_handle);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->data.indices.size() * sizeof(unsigned int), &this->data.indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, this->data.indices.size() * sizeof(unsigned int), &this->data.indices[0], GL_DYNAMIC_DRAW);
 
 	this->si.push_back(ShapeInfo(VERTICES, BAD_GL_VALUE, (this->data.vertices.size() > 0 ? &this->data.vertices[0] : nullptr), sizeof(vec3), this->data.vertices.size(), GL_FLOAT, 3));
 	this->si.push_back(ShapeInfo(COLORS, BAD_GL_VALUE, (this->data.colors.size() > 0 ? &this->data.colors[0] : nullptr), sizeof(vec4), this->data.colors.size(), GL_FLOAT, 4));
@@ -81,8 +81,12 @@ glm::vec4 Shape::RandomColor(vec4 & previous_color, float min , float max)
 	return clamp(vec4(Random(min , max) , Random(min , max) , Random(min , max), 1.0f) + previous_color, vec4(0.0f) , vec4(1.0f));
 }
 
+//	blob may be null
 void Shape::UpdateValues(void(*Update)(struct Data & data, float current_time, void * blob), float current_time, void * blob)
 {
+	if (Update == nullptr)
+		throw std::invalid_argument("Shape::UpdateValues() called with null update function");
+
 	(*Update)(this->data, current_time, blob);
 	this->RecomputeNormals();
 

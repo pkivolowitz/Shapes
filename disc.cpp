@@ -48,19 +48,19 @@ bool Disc::PreGLInitialize()
 		// Add center as first point so that triangle fan can be used.
 		this->data.vertices.push_back(vec3(0.0f, 0.0f, 0.0f));
 		this->data.textures.push_back(vec2(0.0f , 0.0f));
-		this->data.colors.push_back(vec4(1.0f , 0.0f , 0.0f , 1.0f)); // (this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f)));
+		this->data.colors.push_back(this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f)));
 		this->data.normals.push_back(n);
 		this->data.normal_visualization_coordinates.push_back(vec3(0.0f, 0.0f, epsilon<float>()));
 		this->data.normal_visualization_coordinates.push_back(n * scale_factor_for_normals);
 	}
 
-	// An outer ring is requires in all cases.
+	// An outer ring is required in all cases.
 	for (int i = 0; i < real_number_of_slices; i++)
 	{
 		this->data.vertices.push_back(vec3(m * p));
 		this->data.textures.push_back(vec2(p) / (this->outer_radius * 2.0f) + vec2(0.5f , 0.5f));
 		this->data.normals.push_back(n);
-		this->data.colors.push_back(vec4(1.0f , 0.0f , 0.0f , 1.0f)); // this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f) , -0.3f , 0.3f));
+		this->data.colors.push_back(this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f) , -0.3f , 0.3f));
 		this->data.normal_visualization_coordinates.push_back(vec3(m * p) + vec3(0.0f, 0.0f, 0.001f));
 		this->data.normal_visualization_coordinates.push_back(vec3(m * p) + n * scale_factor_for_normals);
 		m = rotate(m, theta, z);
@@ -120,6 +120,8 @@ void Disc::NonGLTakeDown()
 void Disc::RecomputeNormals()
 {
 	vec3 sum;
+	float denominator;
+
 	vec3 A;
 	vec3 B;
 	if (this->inner_radius == 0.0f)
@@ -162,6 +164,38 @@ void Disc::RecomputeNormals()
 			}
 
 			this->data.normals[i] = sum / points;
+		}
+	}
+	else
+	{
+		// Outer verticies
+		for (int i = 0; i < this->slices; i++)
+		{
+			if (this->is_partial_span)
+			{
+				// When the disk is a partial span, the first and last
+				// slices but be considered differently. 
+				if (i == 0)
+				{
+					// The first outer vertex consists of a single triangle.
+					denominator = 1.0f;
+					A = normalize(this->data.vertices[i + 1] - this->data.vertices[i]);
+					B = normalize(this->data.vertices[i + this->slices] - -this->data.vertices[i]);
+					sum = normalize(cross(B , A));
+				}
+				else
+				{
+					denominator = 2.0;
+					A = normalize(this->data.vertices[i + this->slices - 1] - this->data.vertices[i]);
+					B = normalize(this->data.vertices[i - 1] - -this->data.vertices[i]);
+					sum = normalize(cross(B , A));
+					A = normalize(this->data.vertices[i + this->slices] - this->data.vertices[i]);
+					B = normalize(this->data.vertices[i + this->slices - 1] - -this->data.vertices[i]);
+					sum += normalize(cross(B , A));
+				}
+				this->data.normals[i] = sum / denominator;
+			}
+
 		}
 	}
 }

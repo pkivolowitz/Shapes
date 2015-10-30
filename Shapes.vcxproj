@@ -159,6 +159,7 @@
     <ClInclude Include="constant_shader.h" />
     <ClInclude Include="cylinder.h" />
     <ClInclude Include="disc.h" />
+    <ClInclude Include="grid_constellation.h" />
     <ClInclude Include="ilcontainer.h" />
     <ClInclude Include="instance.h" />
     <ClInclude Include="my_freetype.h" />
@@ -172,6 +173,7 @@
     <ClCompile Include="constant_shader.cpp" />
     <ClCompile Include="cylinder.cpp" />
     <ClCompile Include="disc.cpp" />
+    <ClCompile Include="grid_constellation.cpp" />
     <ClCompile Include="ilcontainer.cpp" />
     <ClCompile Include="instance.cpp" />
     <ClCompile Include="main.cpp" />

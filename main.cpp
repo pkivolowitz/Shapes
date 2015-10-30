@@ -9,6 +9,7 @@
 #include "instance.h"
 #include "window.h"
 #include "my_freetype.h"
+#include "grid_constellation.h"
 
 using namespace std;
 using namespace glm;
@@ -20,20 +21,23 @@ using namespace glm;
 #ifdef USE_STEREO
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_STEREO)
 #else
-#define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH)
+#define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE)
 #endif // USE_STEREO
 
+const int NUMBER_OF_OBJECTS = 512;
 vector<Instance> instances;
 freetype::font_data our_font;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Disc disc3(256 , pi<float>() * 2.0f , 1.0f , 0.0f);
+Disc disc3(128 , pi<float>() * 1.5f , 1.0f , 0.0f);
 Cylinder cylinder1(64, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(64 , 8 , pi<float>() * 2.0f , 1.0f , 1.0f);
 Plane plane1(8 , 8);
-Plane plane2(8 , 8);
+Plane plane2(2 , 2);
 Cube cube;
+GridConstellation gc;
+
 vec3 eye(0.0f, 0.0f, 15.0f);
 vec3 cop(0.0f, 0.0f, 0.0f);
 vec3 up(0.0f, 1.0f, 0.0f);
@@ -50,13 +54,28 @@ inline void UpdateTime()
 	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
 }
 
-void TestUpdateDisc(struct Shape::Data & data , float current_time, void * blob)
+void TestUpdateCube(struct Shape::Data & data , float current_time, void * blob)
+{
+	data.vertices = data.vbackup;
+	float delta = sin(current_time * 2.0f);
+	for (int i = 0; i < 4; i++)
+	{
+		data.vertices[i] = vec3(data.vertices[i].x, data.vertices[i].y, delta + 2.0f);
+		data.vertices[i + 4] = vec3(delta + 2.0f, data.vertices[i + 4].y, data.vertices[i + 4].z);
+		data.vertices[i + 8] = vec3(data.vertices[i + 8].x, data.vertices[i + 8].y, -delta - 2.0f);
+		data.vertices[i + 12] = vec3(-delta - 2.0f, data.vertices[i + 12].y, data.vertices[i + 12].z);
+		data.vertices[i + 16] = vec3(data.vertices[i + 16].x, delta + 2.0f, data.vertices[i + 16].z);
+		data.vertices[i + 20] = vec3(data.vertices[i + 20].x, -delta - 2.0f, data.vertices[i + 20].z);
+	}
+}
+
+void TestUpdateDisc(struct Shape::Data & data, float current_time, void * blob)
 {
 	data.vertices = data.vbackup;
 	float theta = (2 * pi<float>()) / (data.vertices.size() - 1);
 	for (size_t i = 0; i < data.vertices.size() - 1; i++)
 	{
-		data.vertices[i+1] = vec3(data.vertices[i + 1].x, data.vertices[i + 1].y, sin(theta*i * 10 + current_time * 4.0f) / 10.0f);
+		data.vertices[i + 1] = vec3(data.vertices[i + 1].x, data.vertices[i + 1].y, sin(theta*i * 6 + current_time * 6.0f) / 14.0f);
 	}
 }
 
@@ -248,7 +267,10 @@ void DrawScene(Window * window)
 			disc1.Draw(false);
 			break;
 		case 1:
-			disc2.Draw(false);
+			glFrontFace(GL_CCW);
+			disc3.Draw(false);
+			glFrontFace(GL_CW);
+
 			break;
 		case 2:
 			plane1.Draw(false);
@@ -323,16 +345,18 @@ void DisplayCube()
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
 	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(0.0f, 1.0f, 0.0f));
-	model_matrix = rotate(model_matrix, radians(45.0f), vec3(1.0f, 1.0f, 1.0f));
+	model_matrix = rotate(model_matrix, radians(5.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = scale(model_matrix, vec3(0.7f, 0.7f, 0.7f));
-	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 10.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
-	mat4 projection_matrix = perspective(window->fovy, window->aspect, window->near_distance, window->far_distance);
+	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 15.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 projection_matrix = perspective(radians(window->fovy), window->aspect, window->near_distance, window->far_distance);
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 	phong_shader.SetMaterial(diffuse, specular, 64.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 	cube.Draw(false);
 	phong_shader.UnUse();
 	glutSwapBuffers();
+	cube.UpdateValues(TestUpdateCube, window->LocalTime(), nullptr);
+
 }
 
 void DisplayDisc()
@@ -350,13 +374,14 @@ void DisplayDisc()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(0.0f) /*window->LocalTime() * 30.0f)*/ , vec3(0.0f , 1.0f , 0.0f));
+	glFrontFace(GL_CCW);
+	//glEnable(GL_CULL_FACE);
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
-	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
+	phong_shader.SetMaterial(diffuse , specular , 16.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	disc3.Draw(false);
 	phong_shader.UnUse();
@@ -380,7 +405,7 @@ void DisplayPlane()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
@@ -391,6 +416,56 @@ void DisplayPlane()
 	phong_shader.UnUse();
 	glutSwapBuffers();
 }
+
+void DisplayGrid()
+{
+	//cout << "dg\n";
+
+	Window * window = Window::FindCurrentWindow(windows);
+	if (window->handle == BAD_GL_VALUE)
+		return;
+
+	glViewport(0 , 0 , window->size.x , window->size.y);
+	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
+	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
+	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
+	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
+
+	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glFrontFace(GL_CW);
+
+	vector<Constellation::PositionData> & pd = gc.GetPositionData();
+
+	mat4 s = scale(mat4() , vec3(50.0f , 50.0f , 1.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 150.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+
+	/*
+	*/
+
+	for (vector<Constellation::PositionData>::iterator iter = pd.begin(); iter < pd.end(); iter++)
+	{
+		mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+		model_matrix = translate(model_matrix , vec3(s * vec4((*iter).location , 1.0f)));
+		vec3 target_dir = normalize((*iter).outward_direction_vector);
+		float rot_angle = acos(dot(target_dir , vec3(0.0f, 0.0f, 1.0f)));
+		if (fabs(rot_angle) > glm::epsilon<float>())
+		{
+			vec3 rot_axis = normalize(cross(target_dir , vec3(0.0f, 0.0f, 1.0f)));
+			model_matrix = rotate(model_matrix, rot_angle , rot_axis);
+		}
+		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 1.0f));
+		phong_shader.Use(model_matrix , view_matrix , projection_matrix);
+		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
+		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
+		plane2.Draw(false);
+		phong_shader.UnUse();
+	}
+	glutSwapBuffers();
+}
+
 
 void DisplayCylinder()
 {
@@ -458,6 +533,12 @@ void DisplayFunc()
 	}
 }
 
+void TimerFunc(int period)
+{
+	glutTimerFunc(1000 / 60 , TimerFunc , 1000 / 60);
+	Window::PostAllRedisplays(windows);
+}
+
 void IdleFunc()
 {
 	Window::PostAllRedisplays(windows);
@@ -472,7 +553,11 @@ void InitializeWindows()
 		glutCloseFunc(CloseFunc);
 		glutDisplayFunc(DisplayFunc);
 		glutKeyboardFunc(KeyboardFunc);
-		glutIdleFunc(IdleFunc);
+		if (i == 0)
+		{
+			//glutTimerFunc(1000 / 60 , TimerFunc , 1000 / 60);
+			glutIdleFunc(IdleFunc);
+		}
 	}
 }
 int main(int argc, char * argv[])
@@ -487,7 +572,7 @@ int main(int argc, char * argv[])
 	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
 	// Adds objects to the world.
-	Instance::DefineInstances(instances, 150);
+	Instance::DefineInstances(instances, NUMBER_OF_OBJECTS);
 
 	glutInitWindowSize(512, 512);
 	glutInitWindowPosition(-1, -1);
@@ -499,11 +584,15 @@ int main(int argc, char * argv[])
 	// This means all buffers and shaders and such need be instantiated only once.
 	glutSetOption(GLUT_RENDERING_CONTEXT , GLUT_USE_CURRENT_CONTEXT);
 
+	gc.Initialize(512);
+
 	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+
 	InitializeWindows();
 	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
 	texture_file_names.push_back("DSC_0337.jpg");
