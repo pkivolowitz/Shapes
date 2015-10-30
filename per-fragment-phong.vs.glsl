@@ -9,15 +9,10 @@ layout (location = 1) in vec4 color;
 layout (location = 2) in vec3 normal;
 layout (location = 3) in vec2 textures;
 
-// Matrices we'll need - these are passed an uniforms...
-// Uniforms are constants within the shader program.
-layout (std140) uniform constants
-{
-    mat4 mv_matrix;
-    mat4 view_matrix;
-    mat4 proj_matrix;
-	mat3 normal_matrix;
-};
+uniform mat4 mv_matrix;
+uniform mat4 view_matrix;
+uniform mat4 proj_matrix;
+uniform mat3 normal_matrix;
 
 // These are outputs of the vertex shader. They will
 // arrive as inputs to the fragment shader after having
