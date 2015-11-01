@@ -90,6 +90,14 @@ void Shape::UpdateValues(void(*Update)(struct Data & data, float current_time, v
 	(*Update)(this->data, current_time, blob);
 	this->RecomputeNormals();
 
+	if (this->data.normal_visualization_coordinates.size() > 0)
+	{
+		glBindVertexArray(normal_array_handle);
+		glBindBuffer(GL_ARRAY_BUFFER, this->normal_visualization_handle);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.normal_visualization_coordinates.size() * sizeof(vec3), &this->data.normal_visualization_coordinates[0]);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+	}
 	glBindVertexArray(vertex_array_handle);
 	for (unsigned int i = 0; i < this->si.size(); i++)
 	{
