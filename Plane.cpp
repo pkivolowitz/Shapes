@@ -24,56 +24,67 @@ bool Cube::PreGLInitialize()
 	this->data.vertices.push_back(vec3( 1.0f,  1.0f,  1.0f));
 	this->data.vertices.push_back(vec3( 1.0f, -1.0f,  1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f,  1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f, 1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f, 1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f, 1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f, 1.0f));
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(0.0f , 0.0f , 1.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i] + this->data.normals[0 + i] / 8.0f);
+	}
 	// right (facing positive x axis)
 	this->data.vertices.push_back(vec3(1.0f,  1.0f,  1.0f));
 	this->data.vertices.push_back(vec3(1.0f,  1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(1.0f, -1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(1.0f, -1.0f,  1.0f));
-	this->data.normals.push_back(vec3(1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(1.0f, 0.0f, 0.0f));
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(1.0f , 0.0f , 0.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i] + this->data.normals[4 + i] / 8.0f);
+	}
 	// back (facing negative z axis)
 	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f, -1.0f));
 	this->data.vertices.push_back(vec3( 1.0f, -1.0f, -1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f,-1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f,-1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f,-1.0f));
-	this->data.normals.push_back(vec3(0.0f, 0.0f,-1.0f));
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(0.0f , 0.0f , -1.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i] + this->data.normals[8 + i] / 8.0f);
+	}
 	// left (facing negative x axis
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f,  1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f,-1.0f));
-	this->data.normals.push_back(vec3(-1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(-1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(-1.0f, 0.0f, 0.0f));
-	this->data.normals.push_back(vec3(-1.0f, 0.0f, 0.0f));
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(-1.0f , 0.0f , 0.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i] + this->data.normals[12 + i] / 8.0f);
+	}
 	// top (facing positive y axis)
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f,   1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, 1.0f,   1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
-	this->data.normals.push_back(vec3(0.0f, 1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, 1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, 1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, 1.0f, 0.0f));
+	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
+	this->data.vertices.push_back(vec3( 1.0f, 1.0f,  1.0f));
+	this->data.vertices.push_back(vec3(-1.0f, 1.0f,  1.0f));
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(0.0f , 1.0f , 0.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i] + this->data.normals[16 + i] / 8.0f);
+	}
 	// bottom (facing negative y axis)
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
 	this->data.vertices.push_back(vec3(1.0f, -1.0f, 1.0f));
 	this->data.vertices.push_back(vec3(1.0f, -1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f, -1.0f));
-	this->data.normals.push_back(vec3(0.0f, -1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, -1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, -1.0f, 0.0f));
-	this->data.normals.push_back(vec3(0.0f, -1.0f, 0.0f));
-
+	for (int i = 0; i < 4; i++)
+	{
+		this->data.normals.push_back(vec3(0.0f , -1.0f , 0.0f));
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i] + this->data.normals[20 + i] / 8.0f);
+	}
 	for (unsigned int i = 0; i < this->data.vertices.size(); i++)
 		this->data.indices.push_back(i);
 
@@ -140,10 +151,179 @@ void Cube::NonGLTakeDown()
 
 void Plane::RecomputeNormals()
 {
+	vec3 sum;
+	vec3 a;
+	vec3 b;
+	int i = 0;
+	int w = divisionsX + 1;
+	vector<vec3> & v = data.vertices;
+	vector<vec3> & n = data.normals;
+	vector<vec3> & p = data.normal_visualization_coordinates;
+
+	for (int row = 0; row <= this->divisionsY; row++)
+	{
+		for (int col = 0; col < w; col++, i++)
+		{
+			sum = vec3(0.0f);
+			if (col == 0)
+			{
+				if (row == divisionsY)
+				{
+					// This is the left edge and bottom row
+					a = normalize(v[i - w] - v[i]);
+					b = normalize(v[i - w + 1] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i + 1] - v[i]);
+					sum += normalize(cross(a , b));
+					if (col == 0)
+					{
+						// This is the bottom row and left edge. We're done.
+						n[i] = -sum / 2.0f;
+					}
+					else
+					{
+						// This is the bottom row and NOT the left edge. One more triangle to do.
+						a = normalize(v[i - 1] - v[i]);
+						b = normalize(v[i - w] - v[i]);
+						sum += normalize(cross(a , b));
+						n[i] = -sum / 3.0f;
+					}
+				}
+				else
+				{
+					// This is the left edge but NOT the bottom row
+					a = normalize(v[i + 1] - v[i]);
+					b = normalize(v[i + w] - v[i]);
+					sum += normalize(cross(a , b));
+					if (row == 0)
+					{
+						// This is the top left corner
+						n[i] = -sum;
+					}
+					else
+					{
+						// This is a left edge lower down than the top left corner
+						a = normalize(v[i - w] - v[i]);
+						b = normalize(v[i - w + 1] - v[i]);
+						sum += normalize(cross(a , b));
+						a = b;
+						b = normalize(v[i + 1] - v[i]);
+						sum += normalize(cross(a , b));
+						// The triangle to the right and lower is already done.
+						n[i] = -sum / 3.0f;
+					}
+				}
+			}
+			else if (col == w - 1)
+			{
+				// This is the right edge
+				if (row < divisionsY)
+				{
+					// This is not the bottom row.
+					a = normalize(v[i + w] - v[i]);
+					b = normalize(v[i + w - 1] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i - 1] - v[i]);
+					sum += normalize(cross(a , b));
+					if (row == 0)
+					{
+						// This is the upper right corner
+						n[i] = -sum / 2.0f;
+					}
+					else
+					{
+						// The is the right edge in the middle.
+						a = b;
+						b = normalize(v[i - w] - v[i]);
+						sum += normalize(cross(a , b));
+						n[i] = -sum / 3.0f;
+					}
+				}
+				else
+				{
+					// This is the lower right corner
+					a = normalize(v[i - 1] - v[i]);
+					b = normalize(v[i - w] - v[i]);
+					n[i] = -normalize(cross(a , b));
+				}
+			}
+			else
+			{
+				// This is in the middle horizontally - now consider the vertical
+				if (row < divisionsY)
+				{
+					a = normalize(v[i + 1] - v[i]);
+					b = normalize(v[i + w] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i + w - 1] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i - 1] - v[i]);
+					sum += normalize(cross(a , b));
+				}
+				if (row == 0)
+				{
+					// We're in the middle horizontally and on the top row
+					n[i] = -sum / 3.0f;
+				}
+				else
+				{
+					// We are in the middle in both dimensions. The calculations
+					// below us are already done. Just do above us.
+					a = normalize(v[i - 1] - v[i]);
+					b = normalize(v[i - w] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i - w + 1] - v[i]);
+					sum += normalize(cross(a , b));
+					a = b;
+					b = normalize(v[i + 1] - v[i]);
+					sum += normalize(cross(a , b));
+					n[i] = -sum / (row == divisionsY ? 3.0f: 6.0f);
+				}
+			}
+			// Attempt to update the normal visualization coordinates.
+			p[i * 2] = v[i];
+			p[i * 2 + 1] = v[i] + n[i] / 8.0f;
+		}
+	}
 }
 
 void Cube::RecomputeNormals()
 {
+	vector<vec3> & v = data.vertices;
+	vector<vec3> & n = data.normals;
+	vector<vec3> & p = data.normal_visualization_coordinates;
+	vec3 a , b;
+
+	int j = 0;
+	for (size_t counter = 0; counter < n.size() / 4; counter++)
+	{
+		int i = counter * 4;
+		a = normalize(v[i + 1] - v[i + 0]);
+		b = normalize(v[i + 3] - v[i + 0]);
+		n[i + 0] = -normalize(cross(a , b));
+		p[j++] = v[i + 0];
+		p[j++] = v[i + 0] + n[i + 0] / 8.0f;
+		a = normalize(v[i + 2] - v[i + 1]);
+		b = normalize(v[i + 0] - v[i + 1]);
+		n[i + 1] = -normalize(cross(a , b));
+		p[j++] = v[i + 1];
+		p[j++] = v[i + 1] + n[i + 1] / 8.0f;
+		a = normalize(v[i + 3] - v[i + 2]);
+		b = normalize(v[i + 1] - v[i + 2]);
+		n[i + 2] = -normalize(cross(a , b));
+		p[j++] = v[i + 2];
+		p[j++] = v[i + 2] + n[i + 2] / 8.0f;
+		a = normalize(v[i + 0] - v[i + 3]);
+		b = normalize(v[i + 2] - v[i + 3]);
+		n[i + 3] = -normalize(cross(a , b));
+		p[j++] = v[i + 3];
+		p[j++] = v[i + 3] + n[i + 3] / 8.0f;
+	}
 }
 
 void Cube::Draw(bool draw_normals)
