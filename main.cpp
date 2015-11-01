@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <time.h>
 #include "disc.h"
 #include "cylinder.h"
@@ -30,11 +31,11 @@ freetype::font_data our_font;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Disc disc3(128 , pi<float>() * 1.5f , 1.0f , 0.0f);
+Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(64, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(64 , 8 , pi<float>() * 2.0f , 1.0f , 1.0f);
 Plane plane1(8 , 8);
-Plane plane2(2 , 2);
+Plane plane2(128 , 128);
 Cube cube;
 GridConstellation gc;
 
@@ -49,15 +50,11 @@ vector<Window> windows;
 vector<ILContainer> textures;
 vector<string> texture_file_names;
 
-inline void UpdateTime()
-{
-	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
-}
-
 void TestUpdateCube(struct Shape::Data & data , float current_time, void * blob)
 {
 	data.vertices = data.vbackup;
 	float delta = sin(current_time * 2.0f);
+	float theta = cos(current_time * 2.0f);
 	for (int i = 0; i < 4; i++)
 	{
 		data.vertices[i] = vec3(data.vertices[i].x, data.vertices[i].y, delta + 2.0f);
@@ -66,6 +63,19 @@ void TestUpdateCube(struct Shape::Data & data , float current_time, void * blob)
 		data.vertices[i + 12] = vec3(-delta - 2.0f, data.vertices[i + 12].y, data.vertices[i + 12].z);
 		data.vertices[i + 16] = vec3(data.vertices[i + 16].x, delta + 2.0f, data.vertices[i + 16].z);
 		data.vertices[i + 20] = vec3(data.vertices[i + 20].x, -delta - 2.0f, data.vertices[i + 20].z);
+	}
+}
+
+void TestUpdatePlane(struct Shape::Data & data , float current_time , void * blob)
+{
+	ivec2 dimensions = *((ivec2 *) blob);
+	int i = 0;
+	data.vertices = data.vbackup;
+	vector<vec3> & v = data.vertices;
+	for (int y = 0; y <= dimensions.y; y++)
+	{
+		for (int x = 0; x <= dimensions.x; x++ , i++)
+			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 20.0f + current_time * 2.0f) * sin(v[i].x * 20.0f + current_time * 2.0f) / 10.0f);
 	}
 }
 
@@ -85,41 +95,6 @@ void TestUpdate(struct Shape::Data & data, float current_time, void * blob)
 	for (vector<vec3>::iterator iter = data.vertices.begin(); iter < data.vertices.end(); iter++)
 		(*iter) = (*iter) * vec3(1.0f, cos(current_time) + 1.01f, 1.0f);
 }
-/*
-void measure_text(font_t* font, const char* msg, float* width, float* height) {
-int i, c;
-
-if (!msg) {
-return;
-}
-
-if (width) {
-// Width of a text rectangle is a sum advances for every glyph in a string
-*width = 0.0f;
-
-for (i = 0; i < strlen(msg); ++i)
-{
-	c = msg[i];
-	*width += font->advance[c];
-}
-	}
-
-	if (height)
-	{
-		// Height of a text rectangle is a high of a tallest glyph in a string
-		*height = 0.0f;
-
-		for (i = 0; i < strlen(msg); ++i)
-		{
-			c = msg[i];
-
-			if (*height < font->height[c])
-			{
-				*height = font->height[c];
-			}
-		}
-	}
-}*/
 
 void AdaptFreetype(freetype::font_data font , mat4 & model_matrix , mat4 & view_matrix , mat4 & projection_matrix, vector<string> & strings, float x, float y)
 {
@@ -186,21 +161,37 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 	switch (c)
 	{
+		case 'n':
+			window->draw_normals = !window->draw_normals;
+			break;
+
 		case 'p':
-			window->is_paused = !window->is_paused;
-			UpdateTime();
-			if (window->is_paused)
+			if (!window->is_paused)
 			{
-				// We have just been paused. Store away the current time.
-				window->time_when_paused = Window::current_time;
+				// We are being paused. 
+				// Store away the current time.
+				window->time_when_paused = Window::CurrentTime();
+				
+				//cout << left << setw(10) << "P when: " << setprecision(4) << window->time_when_paused;
+				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
+				//cout << " Local: " << setprecision(4) << window->LocalTime() << endl;
 			}
 			else
 			{
 				// We have just been unpaused. Add the elapsed time since
 				// we were paused to the total time spent paused. This will
 				// be subtracted from future gets of the current time.
-				window->time_spent_paused += (Window::current_time - window->time_when_paused);
+				//bug here
+				float elapsed_time_this_pause = Window::CurrentTime() - window->time_when_paused;
+				assert(elapsed_time_this_pause > 0);
+				window->time_spent_paused += elapsed_time_this_pause;
+
+				//cout << left << setw(10) << "U when: " << setprecision(4) << window->time_when_paused;
+				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
+				//cout << " Local: " << setprecision(4) << window->LocalTime();
+				//cout << " Current: " << setprecision(6) << Window::CurrentTime() << endl;
 			}
+			window->is_paused = !window->is_paused;
 			break;
 
 		case '+':
@@ -273,7 +264,7 @@ void DrawScene(Window * window)
 
 			break;
 		case 2:
-			plane1.Draw(false);
+			plane2.Draw(false);
 			break;
 		case 3:
 			cube.Draw(false);
@@ -344,16 +335,23 @@ void DisplayCube()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = rotate(model_matrix, radians(5.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = scale(model_matrix, vec3(0.7f, 0.7f, 0.7f));
-	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 15.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 5.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy), window->aspect, window->near_distance, window->far_distance);
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 	phong_shader.SetMaterial(diffuse, specular, 64.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 	cube.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+		cube.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
 	cube.UpdateValues(TestUpdateCube, window->LocalTime(), nullptr);
 
@@ -369,22 +367,30 @@ void DisplayDisc()
 	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
 	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
-	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
+	vec3 diffuse = vec3(0.0f , 0.0f , 0.9f);
 
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	//glEnable(GL_CULL_FACE);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 8.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
-	phong_shader.SetMaterial(diffuse , specular , 16.0f , ambient);
+	phong_shader.SetMaterial(diffuse , specular , 32.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	disc3.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 32.0f , vec3(1.0f , 1.0f , 1.0f));
+		disc3.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
 	disc3.UpdateValues(TestUpdateDisc , window->LocalTime(), nullptr);
 }
@@ -405,16 +411,24 @@ void DisplayPlane()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
-	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
+	phong_shader.SetMaterial(diffuse , specular , 4.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	plane2.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix, view_matrix, projection_matrix);
+		constant_shader.SetMaterial(diffuse, specular, 64.0f, vec3(1.0f, 1.0f, 1.0f));
+		plane2.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
+	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
 
 void DisplayGrid()
@@ -447,8 +461,19 @@ void DisplayGrid()
 
 	for (vector<Constellation::PositionData>::iterator iter = pd.begin(); iter < pd.end(); iter++)
 	{
-		mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+		mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 20.0f) , vec3(0.0f , 1.0f , 0.0f));
 		model_matrix = translate(model_matrix , vec3(s * vec4((*iter).location , 1.0f)));
+
+		// Beginning of orientation code.
+		//
+		// There is an assumption here (we are aligning z axes) that the shape you're building have
+		// a natural facing down the z axis.
+		//
+		// The following orients the object's z axis along the axis held in outward_direction_vector.
+		// target_dir gets that value. The difference in direction from the z axis to the desired direction
+		// is captured by the dot product. The angle is retrieved with the acos. Then, if there's anything 
+		// to do (I suspect the if statement is NOT needed), a rotation axis is made by the cross product
+		// (rotating about it will swing the z axes around). Finally, the rotation is done.
 		vec3 target_dir = normalize((*iter).outward_direction_vector);
 		float rot_angle = acos(dot(target_dir , vec3(0.0f, 0.0f, 1.0f)));
 		if (fabs(rot_angle) > glm::epsilon<float>())
@@ -456,11 +481,13 @@ void DisplayGrid()
 			vec3 rot_axis = normalize(cross(target_dir , vec3(0.0f, 0.0f, 1.0f)));
 			model_matrix = rotate(model_matrix, rot_angle , rot_axis);
 		}
+		// End of orientation code.
+
 		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 1.0f));
 		phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
-		plane2.Draw(false);
+		cylinder2.Draw(false);
 		phong_shader.UnUse();
 	}
 	glutSwapBuffers();
@@ -503,8 +530,9 @@ void DisplayCylinder()
 
 void DisplayFunc()
 {
-	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
-	vec4 crimson(0.6f, 0.0f, 0.0f, 1.0f);
+	Window::UpdateTime();
+
+	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
@@ -512,25 +540,22 @@ void DisplayFunc()
 
 	glPolygonMode(GL_FRONT_AND_BACK , (window->wireframe ? GL_LINE : GL_FILL));
 
-	if (!window->is_paused)
+	if (window->DisplayFunc != nullptr)
 	{
-		if (window->DisplayFunc != nullptr)
-		{
-			window->DisplayFunc();
-			return;
-		}
-
-		#ifdef STEREO
-		glDrawBuffer(GL_BACK);
-		#endif
-		glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glFrontFace(GL_CW);
-		//glEnable(GL_CULL_FACE);
-		DrawScene(window);
-		glutSwapBuffers();
+		window->DisplayFunc();
+		return;
 	}
+
+	#ifdef STEREO
+	glDrawBuffer(GL_BACK);
+	#endif
+	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glFrontFace(GL_CW);
+	//glEnable(GL_CULL_FACE);
+	DrawScene(window);
+	glutSwapBuffers();
 }
 
 void TimerFunc(int period)
@@ -584,21 +609,21 @@ int main(int argc, char * argv[])
 	// This means all buffers and shaders and such need be instantiated only once.
 	glutSetOption(GLUT_RENDERING_CONTEXT , GLUT_USE_CURRENT_CONTEXT);
 
-	gc.Initialize(512);
+	gc.Initialize(525);
 
-	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
-	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	//windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 
 	InitializeWindows();
 	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
-	texture_file_names.push_back("DSC_0337.jpg");
-	texture_file_names.push_back("DSC_0338.jpg");
-	texture_file_names.push_back("DSC_1233.jpg");
-	texture_file_names.push_back("DSC_1623.jpg");
+	//texture_file_names.push_back("DSC_0337.jpg");
+	//texture_file_names.push_back("DSC_0338.jpg");
+	//texture_file_names.push_back("DSC_1233.jpg");
+	//texture_file_names.push_back("DSC_1623.jpg");
 
 	textures.resize(texture_file_names.size());
 	for (size_t i = 0; i < texture_file_names.size(); i++)
