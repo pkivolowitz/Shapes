@@ -14,6 +14,8 @@ Window::Window(char * window_name,  void(*DisplayFunc)() , void(*KeyboardFunc)(u
 	this->near_distance = near_distance;
 	this->far_distance = far_distance;
 	this->wireframe = false;
+	this->draw_normals = false;
+	this->time_when_paused = 0.0f;
 	this->time_spent_paused = 0.0f;
 	this->is_paused = false;
 }
