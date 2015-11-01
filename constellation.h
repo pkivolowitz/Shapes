@@ -16,7 +16,7 @@
 class Constellation
 {
 public:
-	const int MAXIMUM_NUMBER_OF_OBJECTS = 512;
+	const int MAXIMUM_NUMBER_OF_OBJECTS = 525;
 
 	class PositionData
 	{
