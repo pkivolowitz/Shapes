@@ -19,22 +19,32 @@ public:
 	static Window * FindCurrentWindow(std::vector<Window> & windows);
 	static void PostAllRedisplays(std::vector<Window> & windows);
 
-	static float current_time;
 	void(*DisplayFunc)();
 	void(*KeyboardFunc)(unsigned char c , int x , int y);
 	void(*ReshapeFunc)(int w , int h);
 	void(*CloseFunc)();
 
+	static float UpdateTime()
+	{
+		Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
+		return Window::current_time;
+	}
+
+	static float CurrentTime()
+	{
+		return Window::current_time;
+	}
 
 	float LocalTime()
 	{
-		return Window::current_time - this->time_spent_paused;
+		return (this->is_paused) ? (this->time_when_paused - this->time_spent_paused) : (Window::CurrentTime() - this->time_spent_paused);
 	}
 
 	char * window_name;
 	GLuint handle;
 	glm::ivec2 size;
 	bool wireframe;
+	bool draw_normals;
 	float aspect;
 	float fovy;
 	float near_distance;
@@ -42,4 +52,7 @@ public:
 	float time_spent_paused;
 	float time_when_paused;
 	bool is_paused;
+
+private:
+	static float current_time;
 };
