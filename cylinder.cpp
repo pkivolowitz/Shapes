@@ -2,8 +2,7 @@
 #include <stdexcept>
 #include "cylinder.h"
 
-// Leave this defined until RecomputeNormals is
-// written to support QUADS. 
+// Leave this defined 
 #define	TRIANGLES
 
 using namespace std;
@@ -30,13 +29,13 @@ Cylinder::Cylinder(int slices, int stacks, float span, float back_radius, float 
 	this->is_partial_span = this->span != full_span;
 }
 
-void Linear(float x, float * evaluation, float * derivitive, float p1, float p2)
+void Linear(float x, float * evaluation, float * derivitive, float fr, float br)
 {
 	assert(evaluation != nullptr);
 	assert(derivitive != nullptr);
 
-	*evaluation = mix(p1, p2, x);
-	*derivitive = p2 - p1;
+	*evaluation = mix(br, fr, x);
+	*derivitive = normalize(fr - br);
 }
 
 void Quadratic(float x, float * evaluation, float * derivitive, float p1, float p2)
@@ -84,7 +83,7 @@ bool Cylinder::PreGLInitialize()
 	int real_number_of_slices = this->slices + (this->is_partial_span ? 1 : 0);
 	this->data.vertices.reserve(real_number_of_slices * (this->stacks + 1));
 	this->data.normals.reserve(real_number_of_slices * (this->stacks + 1));
-
+	this->data.normal_visualization_coordinates.reserve(real_number_of_slices * (this->stacks + 1) * 2);
 	mat4 m = translate(mat4(), vec3(0.0f, 0.0f, -0.5f));
 
 	for (int j = 0; j < this->stacks + 1; j++)
@@ -126,11 +125,11 @@ bool Cylinder::PreGLInitialize()
 			vec3 n = vec3(m3 * rotated_y_axis);
 			this->data.vertices.push_back(vec3(m2 * p));
 			this->data.normals.push_back(n);
+			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1));
+			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1) + *(this->data.normals.end() - 1) / this->NORMAL_LENGTH_DIVISOR);
 			this->data.colors.push_back(this->RandomColor((i > 0 ? *(this->data.colors.end() - 1) : vec4(0.5f, 0.5f, 0.5f, 1.0f)), -0.2f, 0.2f));
-			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1) * e);
-			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1) + n / 6.0f);
-			m2 = rotate(m2, theta, z_axis);
-			m3 = rotate(m3, theta, z_axis);
+			m2 = rotate(m2, -theta, z_axis);
+			m3 = rotate(m3, -theta, z_axis);
 		}
 
 		m = translate(m, delta_z);
@@ -145,15 +144,16 @@ bool Cylinder::PreGLInitialize()
 		for (int i = 0; i < this->slices; i++)
 		{
 			#ifdef TRIANGLES
-			// The winding is clockwise.
+			// The winding is supposed to be clockwise. But this is definitely
+			// counter clockwise. 
 			// First or Top triangle
 			this->data.indices.push_back(j * real_number_of_slices + i);
-			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
 			this->data.indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
+			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
 			// Second or Bottom triangle
 			this->data.indices.push_back(j * real_number_of_slices + (i + 1) % real_number_of_slices);
-			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
 			this->data.indices.push_back((j + 1) * real_number_of_slices + (i + 1) % real_number_of_slices);
+			this->data.indices.push_back((j + 1) * real_number_of_slices + i);
 			#else
 			this->indices.push_back(j * real_number_of_slices + i);
 			this->indices.push_back((j + 1) * real_number_of_slices + i);
@@ -168,36 +168,42 @@ bool Cylinder::PreGLInitialize()
 
 void Cylinder::RecomputeNormals()
 {
+	int real_number_of_slices = this->slices + (this->is_partial_span ? 1 : 0);
+	vector<vec3> & v = data.vertices;
+	vector<vec3> & n = data.normals;
+	vector<vec3> & p = data.normal_visualization_coordinates;
+	vec3 a;
+	vec3 b;
+	vec3 sum;
 
+	int i = 0; // This is the true index of vertices.
+	for (int stack_counter = 0; stack_counter < this->stacks; stack_counter++)
+	{
+		for (int slice_counter = 0; slice_counter < real_number_of_slices; slice_counter++, i++)
+		{
+			sum = vec3(0.0f);
+
+			if (slice_counter == 0 && is_partial_span)
+			{
+				// This is the first vertex on this partial stack. It is treated differently
+				// as there are no triangles to the left.
+			}
+			else if (slice_counter == slices && is_partial_span)
+			{
+				// This is the last vertex on this partial stack. It is treated differently 
+				// as there are no triangles to the right.
+			}
+			else
+			{
+				// Except for the above, all vertices can be treated identically with the provision of course of care about wrap-around.
+				//a = normalize(v[(i + 1)] - v[i]);
+				//b = normalize(v[(i + 1) % real_number_of_slices] - v[i]);
+			}
+		}
+	}
 }
 
 void Cylinder::NonGLTakeDown()
 {
 
-}
-
-void Cylinder::Draw(bool draw_normals)
-{
-	if (this->data.vertices.size() == 0)
-	{
-		this->PreGLInitialize();
-		this->CommonGLInitialization();
-	}
-
-	if (draw_normals && this->data.normal_visualization_coordinates.size() > 0)
-	{
-		glBindVertexArray(this->normal_array_handle);
-		glDrawArrays(GL_LINES, 0, this->data.normal_visualization_coordinates.size());
-	}
-	else
-	{
-		glBindVertexArray(this->vertex_array_handle);
-		#ifdef TRIANGLES
-		glDrawElements(GL_TRIANGLES , this->data.indices.size() , GL_UNSIGNED_INT , nullptr);
-		#else
-		glDrawElements(GL_QUADS, this->indices.size(), GL_UNSIGNED_INT, nullptr);
-		#endif
-	}
-	glBindVertexArray(0);
-	this->GLReturnedError("Disc::Draw() - exiting");
 }

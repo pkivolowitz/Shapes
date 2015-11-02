@@ -17,8 +17,11 @@ class Shape
 {
 public:
 
+	const float NORMAL_LENGTH_DIVISOR = 8.0f;
+
 	// UpdateValues() needs access to all these - by wrapping them in this struct we
-	// can pass the struct's address rather than all these individually.
+	// can pass the struct's address rather than all these individually. For passing
+	// custom data, use the blob parameter.
 	struct Data
 	{
 		std::vector<glm::vec3> vertices;
@@ -62,7 +65,10 @@ public:
 
 	Shape() {}
 
-	virtual void Draw(bool draw_normals = false) = 0;
+	// THIS USED TO BE ABSTRACT. It has been refactored into the Shape class as most implementations are the same.
+	// The default call Draw() will draw faces (not normals) made from triangles. If you need something else,  for
+	// example with Cube (GL_QUADS), then add the optional arguements.
+	virtual void Draw(bool draw_normals = false, GLuint what_to_draw = GL_TRIANGLES);
 	virtual void UpdateValues(void(*Update)(struct Data & data, float current_time, void * blob), float current_time, void * blob);
 
 protected:

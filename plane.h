@@ -6,7 +6,7 @@ class Plane : public Shape
 public:
 	Plane(int divisionsX = 2, int divisionsY = 2);
 
-	void Draw(bool draw_normals = false);
+	glm::ivec2 Dimensions() { return glm::ivec2(this->divisionsX , this->divisionsY); }
 
 protected:
 	bool PreGLInitialize();

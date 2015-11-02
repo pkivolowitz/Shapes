@@ -13,6 +13,28 @@ void Shape::GLTakeDown()
 {
 }
 
+void Shape::Draw(bool draw_normals, GLuint what_to_draw)
+{
+	if (this->data.vertices.size() == 0)
+	{
+		this->PreGLInitialize();
+		this->CommonGLInitialization();
+	}
+
+	if (draw_normals && this->data.normal_visualization_coordinates.size() > 0)
+	{
+		glBindVertexArray(this->normal_array_handle);
+		glDrawArrays(GL_LINES , 0 , this->data.normal_visualization_coordinates.size());
+	}
+	else
+	{
+		glBindVertexArray(this->vertex_array_handle);
+		glDrawElements(what_to_draw , this->data.indices.size() , GL_UNSIGNED_INT , nullptr);
+	}
+	glBindVertexArray(0);
+	this->GLReturnedError("Shape::Draw() - exiting");
+}
+
 bool Shape::CommonGLInitialization()
 {
 	// If there are no vertices defined, then we have no work to do.
@@ -90,6 +112,14 @@ void Shape::UpdateValues(void(*Update)(struct Data & data, float current_time, v
 	(*Update)(this->data, current_time, blob);
 	this->RecomputeNormals();
 
+	if (this->data.normal_visualization_coordinates.size() > 0)
+	{
+		glBindVertexArray(normal_array_handle);
+		glBindBuffer(GL_ARRAY_BUFFER, this->normal_visualization_handle);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, this->data.normal_visualization_coordinates.size() * sizeof(vec3), &this->data.normal_visualization_coordinates[0]);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (GLubyte *)NULL);
+	}
 	glBindVertexArray(vertex_array_handle);
 	for (unsigned int i = 0; i < this->si.size(); i++)
 	{

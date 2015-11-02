@@ -5,7 +5,6 @@ class Cylinder : public Shape
 {
 public:
 	Cylinder(int slices, int stacks, float span, float back_radius = 1.0f, float front_radius = 1.0f);
-	void Draw(bool draw_normals = false);
 
 protected:
 	bool PreGLInitialize();
