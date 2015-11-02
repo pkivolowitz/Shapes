@@ -16,7 +16,11 @@ void PhongShader::Use(mat4 &model_matrix, mat4 &view_matrix, mat4 &projection_ma
 	this->GLReturnedError("PhongShader::Use() - entering");
 	Shader::Use();
 
-	// TO DO - TRY USING THE OLD WAY OF GETTING TO UNIFORMS - THIS SEEMS TO BE SLOWING ME DOWN.
+	// Note - this originally used uniform blocks mapped to local memory.
+	// This caused an insane amount of performance hits. This old style of using
+	// glUniformMatrix4fv gained a performance increase of about three orders of
+	// magnitude with lots of shapes.
+
 	mat4 modelview_matrix = view_matrix * model_matrix;
 	mat3 normal_matrix = normal_matrix = inverse(transpose(mat3(modelview_matrix)));
 
@@ -33,6 +37,21 @@ void PhongShader::UnUse()
 	this->GLReturnedError("PhongShader::UnUse() - entering");
 	Shader::UnUse();
 	this->GLReturnedError("PhongShader::UnUse() - exiting");
+}
+
+void PhongShader::EnableTexture(ILContainer & ilcontainer , GLuint texture_unit)
+{
+	glUniform1i(this->uniforms.base_texture_location , texture_unit);
+	ilcontainer.Bind(texture_unit);
+	glEnable(GL_TEXTURE_2D);
+}
+
+void PhongShader::SelectSubroutine(int subroutine_index)
+{
+	if (subroutine_index < 0 || subroutine_index >= int(this->subroutine_indices.size()))
+		throw std::invalid_argument("PhongShader::SelectSubroutine() - bad index");
+
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER , 1 , (const GLuint *) &this->subroutine_indices[subroutine_index]);
 }
 
 void PhongShader::SetLightPosition(glm::vec3 light_position)
@@ -53,9 +72,10 @@ void PhongShader::CustomSetup()
 	uniforms.view_matrix = glGetUniformLocation(this->program_id , "view_matrix");
 	uniforms.normal_matrix = glGetUniformLocation(this->program_id , "normal_matrix");
 	uniforms.projection_matrix = glGetUniformLocation(this->program_id , "proj_matrix");
-	//	if (uniforms.diffuse_albedo == BAD_GL_VALUE || uniforms.specular_albedo == BAD_GL_VALUE || uniforms.specular_power == BAD_GL_VALUE || uniforms.ambient == BAD_GL_VALUE)
-//		throw std::exception("one or more of the uniforms in the phong shader was not found");
-
+	uniforms.base_texture_location = glGetUniformLocation(this->program_id , "base_texture");
+	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER, "Constant"));
+	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER, "PerPixelLighting"));
+	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "PPLWithTexture"));
 	Shader::UnUse();
 }
 

@@ -19,6 +19,7 @@ Updates:	10/4/2015		Rolling into generic shape builders.
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "ilcontainer.h"
 
 class Shader
 {
@@ -31,6 +32,8 @@ public:
 	virtual void CustomSetup() = 0;
 	virtual void SetMaterial(glm::vec3 diffuse_albedo, glm::vec3 specular_albedo, float specular_power, glm::vec3 ambient) = 0;
 	virtual void SetLightPosition(glm::vec3 light_position) {}
+	virtual void SelectSubroutine(int subroutine_index) {}
+	virtual void EnableTexture(ILContainer & ilcontainer , GLuint texture_unit) {}
 
 	GLuint vertex_shader_id;
 	GLuint fragment_shader_id;
