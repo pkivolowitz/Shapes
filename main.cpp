@@ -605,11 +605,11 @@ int main(int argc, char * argv[])
 	gc.Initialize(525);
 
 	// This vector is used to initialize all the window objects. 
-	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	//windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
 	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
