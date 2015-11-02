@@ -1,7 +1,5 @@
 #version 410 core
 
-// Lifted largely from OpenGL Superbible 7th Edition
-
 // Per-vertex attributes. The location here corresponds
 // to the attribute number in the calling CPU-based program.
 layout (location = 0) in vec3 position;

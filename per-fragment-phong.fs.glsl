@@ -31,6 +31,9 @@ uniform vec3 light_position = vec3(0.0, 0.0, 1000.0);
 
 uniform sampler2D base_texture;
 
+// A global time value as needed by many of the shader toy shaders.
+uniform float global_time;
+
 subroutine(color_t)
 vec4 Constant()
 {
@@ -76,6 +79,30 @@ vec4 PPLWithTexture()
 	vec3 specular = pow(max(dot(r, v), 0.0), specular_power) * specular_albedo;
 
 	return vec4(ambient + diffuse + specular, 1.0);
+		//vec4(fs_in.T.t, fs_in.T.t, fs_in.T.t, 0); // 
+}
+
+subroutine(color_t)
+vec4 ShaderToy1()
+{
+	// http://www.pouet.net/prod.php?which=57245
+
+	vec3 c;
+	float l;
+	float z= global_time;
+
+	for(int i=0;i<3;i++)
+	{
+		vec2 uv;
+		vec2 p = fs_in.T;
+		uv = p;
+		p -= 0.5;
+		z +=.07;
+		l = length(p);
+		uv += p / l * (sin(z)+1.0) * abs(sin(l * 9.0 - z * 2.0));
+		c[i] = 0.01/length(abs(mod(uv, 1.0) - 0.5));
+	}
+	return vec4(c / l, 1.0);
 }
 
 void main(void)
