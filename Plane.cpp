@@ -117,6 +117,7 @@ bool Plane::PreGLInitialize()
 			//	this->data.vertices.push_back(vec3(-2.0f, v.y, v.z));
 			//else
 			this->data.vertices.push_back(v);
+			this->data.textures.push_back(vec2(v.x / 2.0f + 0.5f, v.y / 2.0f + 0.5f));
 			this->data.normals.push_back(vec3(0.0f,0.0f,1.0f));
 			this->data.colors.push_back(this->RandomColor((this->data.colors.size() > 0 ? *(this->data.colors.end() - 1) : vec4(0.5f , 0.5f , 0.5f , 1.0f)) , -0.2f , 0.2f));
 			this->data.normal_visualization_coordinates.push_back(*(this->data.vertices.end() - 1));
