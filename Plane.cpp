@@ -19,6 +19,14 @@ Plane::Plane(int divisionsX, int divisionsY)
 	this->divisionsY = divisionsY;
 }
 
+void Cube::AddTextureCoordinates()
+{
+	this->data.textures.push_back(vec2(0.0f , 0.0f));
+	this->data.textures.push_back(vec2(1.0f , 0.0f));
+	this->data.textures.push_back(vec2(1.0f , 1.0f));
+	this->data.textures.push_back(vec2(0.0f , 1.0f));
+}
+
 // PreGLInitialize is used to establish an initial configuration of vertex
 // attributes include position, normal, etc.
 bool Cube::PreGLInitialize()
@@ -34,6 +42,7 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i] + this->data.normals[0 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
 	// right (facing positive x axis)
 	this->data.vertices.push_back(vec3(1.0f,  1.0f,  1.0f));
 	this->data.vertices.push_back(vec3(1.0f,  1.0f, -1.0f));
@@ -45,6 +54,7 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i] + this->data.normals[4 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
 	// back (facing negative z axis)
 	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
@@ -56,6 +66,7 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i] + this->data.normals[8 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
 	// left (facing negative x axis
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f,  1.0f));
@@ -67,6 +78,7 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i] + this->data.normals[12 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
 	// top (facing positive y axis)
 	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
 	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
@@ -78,6 +90,7 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i] + this->data.normals[16 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
 	// bottom (facing negative y axis)
 	this->data.vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
 	this->data.vertices.push_back(vec3(1.0f, -1.0f, 1.0f));
@@ -89,6 +102,10 @@ bool Cube::PreGLInitialize()
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i]);
 		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i] + this->data.normals[20 + i] / NORMAL_LENGTH_DIVISOR);
 	}
+	AddTextureCoordinates();
+	
+	// Faces complete.
+
 	for (unsigned int i = 0; i < this->data.vertices.size(); i++)
 		this->data.indices.push_back(i);
 

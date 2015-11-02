@@ -26,4 +26,5 @@ protected:
 	bool PreGLInitialize();
 	void NonGLTakeDown();
 	void RecomputeNormals();
+	void AddTextureCoordinates();
 };

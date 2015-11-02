@@ -47,7 +47,7 @@ bool Disc::PreGLInitialize()
 		this->is_fan = true;
 		// Add center as first point so that triangle fan can be used.
 		this->data.vertices.push_back(vec3(0.0f, 0.0f, 0.0f));
-		this->data.textures.push_back(vec2(0.0f , 0.0f));
+		this->data.textures.push_back(vec2(0.5f , 0.5f));
 		this->data.colors.push_back(this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f)));
 		this->data.normals.push_back(n);
 		this->data.normal_visualization_coordinates.push_back(*(data.vertices.end() - 1));
@@ -58,7 +58,7 @@ bool Disc::PreGLInitialize()
 	for (int i = 0; i < real_number_of_slices; i++)
 	{
 		this->data.vertices.push_back(vec3(m * p));
-		this->data.textures.push_back(vec2(p) / (this->outer_radius * 2.0f) + vec2(0.5f , 0.5f));
+		this->data.textures.push_back(vec2(*(this->data.vertices.end() - 1)) / (this->outer_radius * 2.0f) + vec2(0.5f , 0.5f));
 		this->data.normals.push_back(n);
 		this->data.colors.push_back(this->RandomColor(vec4(0.5f , 0.5f , 0.5f , 1.0f) , -0.3f , 0.3f));
 		this->data.normal_visualization_coordinates.push_back(*(data.vertices.end() - 1));
