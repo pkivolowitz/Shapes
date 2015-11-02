@@ -82,6 +82,7 @@ bool Cylinder::PreGLInitialize()
 
 	int real_number_of_slices = this->slices + (this->is_partial_span ? 1 : 0);
 	this->data.vertices.reserve(real_number_of_slices * (this->stacks + 1));
+	this->data.textures.reserve(real_number_of_slices * (this->stacks + 1));
 	this->data.normals.reserve(real_number_of_slices * (this->stacks + 1));
 	this->data.normal_visualization_coordinates.reserve(real_number_of_slices * (this->stacks + 1) * 2);
 	mat4 m = translate(mat4(), vec3(0.0f, 0.0f, -0.5f));
@@ -119,7 +120,7 @@ bool Cylinder::PreGLInitialize()
 			// so the last value of the division below will be 1.0.
 			//
 			// The s value is computed above and varies only with each stack.
-			tc = vec2(tc.s , i / float(real_number_of_slices));
+			tc = vec2(tc.s , i / float(real_number_of_slices - 1));
 			this->data.textures.push_back(tc);
 
 			vec3 n = vec3(m3 * rotated_y_axis);
