@@ -66,7 +66,6 @@ vec4 PPLWithTexture()
 
 	if (!gl_FrontFacing)
 	{
-		diffuse2 = vec3(fs_in.C);
 		N2 = -N2;
 	}
 	vec3 n = normalize(N2);
