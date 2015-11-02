@@ -32,7 +32,7 @@ void main(void)
 	vs_out.N = normalize(inverse(transpose(mat3(mv_matrix))) * normal);
 	vs_out.P = vec3(mv_matrix * vec4(position, 1.0));
 	vs_out.C = color;
-	vs_out.T = textures;
+	vs_out.T = vec2(textures.x, 1.0 - textures.y);
 
 	gl_Position = proj_matrix * mv_matrix * vec4(position, 1.0);
 }
