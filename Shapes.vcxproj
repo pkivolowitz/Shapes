@@ -157,6 +157,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="constant_shader.h" />
+    <ClInclude Include="constellation.h" />
     <ClInclude Include="cylinder.h" />
     <ClInclude Include="disc.h" />
     <ClInclude Include="grid_constellation.h" />

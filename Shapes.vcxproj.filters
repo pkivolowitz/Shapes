@@ -103,6 +103,9 @@
     <ClInclude Include="grid_constellation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="constellation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="per-fragment-phong.fs.glsl">
