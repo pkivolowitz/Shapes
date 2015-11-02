@@ -19,7 +19,7 @@ bool GridConstellation::Initialize(int number_of_objects)
 	{
 		for (int x = 0; x < size; x++)
 		{
-			this->positions[i++] = PositionData(p , vec3(0.0f , 0.0f , 1.0f));
+			this->positions[i++] = PositionData(p , vec3(sin(p.x * 2.0f * glm::pi<float>()) , 0.0f , cos(p.x * 2.0f * glm::pi<float>())));
 			p.x += delta;
 		}
 		p.x = -1.0f;
