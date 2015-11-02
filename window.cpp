@@ -14,6 +14,8 @@ Window::Window(char * window_name,  void(*DisplayFunc)() , void(*KeyboardFunc)(u
 	this->near_distance = near_distance;
 	this->far_distance = far_distance;
 	this->wireframe = false;
+	this->draw_normals = false;
+	this->time_when_paused = 0.0f;
 	this->time_spent_paused = 0.0f;
 	this->is_paused = false;
 }
@@ -38,6 +40,23 @@ void Window::PostAllRedisplays(std::vector<Window> & windows)
 		{
 			glutSetWindow(windows[i].handle);
 			glutPostRedisplay();
+		}
+	}
+}
+
+void Window::InitializeWindows(std::vector<Window> & windows, void(*DisplayFunc)(void) , void(*KeyboardFunc)(unsigned char , int , int) , void(*CloseFunc)(void) , void(*ReshapeFunc)(int , int) , void(*IdleFunc)())
+{
+	for (unsigned int i = 0; i < windows.size(); i++)
+	{
+		windows[i].handle = glutCreateWindow(windows[i].window_name);
+		glutReshapeFunc(ReshapeFunc);
+		glutCloseFunc(CloseFunc);
+		glutDisplayFunc(DisplayFunc);
+		glutKeyboardFunc(KeyboardFunc);
+		if (i == 0)
+		{
+			//glutTimerFunc(1000 / 60 , TimerFunc , 1000 / 60);
+			glutIdleFunc(IdleFunc);
 		}
 	}
 }
