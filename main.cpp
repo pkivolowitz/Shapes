@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <time.h>
 #include "disc.h"
 #include "cylinder.h"
@@ -30,11 +31,11 @@ freetype::font_data our_font;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
-Disc disc3(128 , pi<float>() * 1.5f , 1.0f , 0.0f);
+Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(64, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
-Cylinder cylinder2(64 , 8 , pi<float>() * 2.0f , 1.0f , 1.0f);
+Cylinder cylinder2(64 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
-Plane plane2(2 , 2);
+Plane plane2(128 , 128);
 Cube cube;
 GridConstellation gc;
 
@@ -49,15 +50,11 @@ vector<Window> windows;
 vector<ILContainer> textures;
 vector<string> texture_file_names;
 
-inline void UpdateTime()
-{
-	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
-}
-
 void TestUpdateCube(struct Shape::Data & data , float current_time, void * blob)
 {
 	data.vertices = data.vbackup;
 	float delta = sin(current_time * 2.0f);
+	float theta = cos(current_time * 2.0f);
 	for (int i = 0; i < 4; i++)
 	{
 		data.vertices[i] = vec3(data.vertices[i].x, data.vertices[i].y, delta + 2.0f);
@@ -66,6 +63,19 @@ void TestUpdateCube(struct Shape::Data & data , float current_time, void * blob)
 		data.vertices[i + 12] = vec3(-delta - 2.0f, data.vertices[i + 12].y, data.vertices[i + 12].z);
 		data.vertices[i + 16] = vec3(data.vertices[i + 16].x, delta + 2.0f, data.vertices[i + 16].z);
 		data.vertices[i + 20] = vec3(data.vertices[i + 20].x, -delta - 2.0f, data.vertices[i + 20].z);
+	}
+}
+
+void TestUpdatePlane(struct Shape::Data & data , float current_time , void * blob)
+{
+	ivec2 dimensions = *((ivec2 *) blob);
+	int i = 0;
+	data.vertices = data.vbackup;
+	vector<vec3> & v = data.vertices;
+	for (int y = 0; y <= dimensions.y; y++)
+	{
+		for (int x = 0; x <= dimensions.x; x++ , i++)
+			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 20.0f + current_time * 2.0f) * sin(v[i].x * 20.0f + current_time * 2.0f) / 10.0f);
 	}
 }
 
@@ -85,41 +95,6 @@ void TestUpdate(struct Shape::Data & data, float current_time, void * blob)
 	for (vector<vec3>::iterator iter = data.vertices.begin(); iter < data.vertices.end(); iter++)
 		(*iter) = (*iter) * vec3(1.0f, cos(current_time) + 1.01f, 1.0f);
 }
-/*
-void measure_text(font_t* font, const char* msg, float* width, float* height) {
-int i, c;
-
-if (!msg) {
-return;
-}
-
-if (width) {
-// Width of a text rectangle is a sum advances for every glyph in a string
-*width = 0.0f;
-
-for (i = 0; i < strlen(msg); ++i)
-{
-	c = msg[i];
-	*width += font->advance[c];
-}
-	}
-
-	if (height)
-	{
-		// Height of a text rectangle is a high of a tallest glyph in a string
-		*height = 0.0f;
-
-		for (i = 0; i < strlen(msg); ++i)
-		{
-			c = msg[i];
-
-			if (*height < font->height[c])
-			{
-				*height = font->height[c];
-			}
-		}
-	}
-}*/
 
 void AdaptFreetype(freetype::font_data font , mat4 & model_matrix , mat4 & view_matrix , mat4 & projection_matrix, vector<string> & strings, float x, float y)
 {
@@ -157,6 +132,8 @@ void ReshapeFunc(int w, int h)
 	}
 }
 
+// If a window specific close function is defined, it is called. After that,
+// the handle to the provoking window is initialized to BAD_GL_VALUE.
 void CloseFunc()
 {
 	Window * window = Window::FindCurrentWindow(windows);
@@ -166,10 +143,7 @@ void CloseFunc()
 		{
 			window->CloseFunc();
 		}
-		else
-		{
-			window->handle = BAD_GL_VALUE;
-		}
+		window->handle = BAD_GL_VALUE;
 	}
 }
 
@@ -186,21 +160,37 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 	switch (c)
 	{
+		case 'n':
+			window->draw_normals = !window->draw_normals;
+			break;
+
 		case 'p':
-			window->is_paused = !window->is_paused;
-			UpdateTime();
-			if (window->is_paused)
+			if (!window->is_paused)
 			{
-				// We have just been paused. Store away the current time.
-				window->time_when_paused = Window::current_time;
+				// We are being paused. 
+				// Store away the current time.
+				window->time_when_paused = Window::CurrentTime();
+				
+				//cout << left << setw(10) << "P when: " << setprecision(4) << window->time_when_paused;
+				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
+				//cout << " Local: " << setprecision(4) << window->LocalTime() << endl;
 			}
 			else
 			{
 				// We have just been unpaused. Add the elapsed time since
 				// we were paused to the total time spent paused. This will
 				// be subtracted from future gets of the current time.
-				window->time_spent_paused += (Window::current_time - window->time_when_paused);
+				//bug here
+				float elapsed_time_this_pause = Window::CurrentTime() - window->time_when_paused;
+				assert(elapsed_time_this_pause > 0);
+				window->time_spent_paused += elapsed_time_this_pause;
+
+				//cout << left << setw(10) << "U when: " << setprecision(4) << window->time_when_paused;
+				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
+				//cout << " Local: " << setprecision(4) << window->LocalTime();
+				//cout << " Current: " << setprecision(6) << Window::CurrentTime() << endl;
 			}
+			window->is_paused = !window->is_paused;
 			break;
 
 		case '+':
@@ -267,13 +257,10 @@ void DrawScene(Window * window)
 			disc1.Draw(false);
 			break;
 		case 1:
-			glFrontFace(GL_CCW);
 			disc3.Draw(false);
-			glFrontFace(GL_CW);
-
 			break;
 		case 2:
-			plane1.Draw(false);
+			plane2.Draw(false);
 			break;
 		case 3:
 			cube.Draw(false);
@@ -343,17 +330,23 @@ void DisplayCube()
 	glClearColor(crimson.r, crimson.g, crimson.b, crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 model_matrix = rotate(mat4(), radians(window->LocalTime() * 30.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = rotate(model_matrix, radians(5.0f), vec3(1.0f, 1.0f, 1.0f));
 	model_matrix = scale(model_matrix, vec3(0.7f, 0.7f, 0.7f));
-	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 15.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f, 0.0f, 5.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy), window->aspect, window->near_distance, window->far_distance);
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 	phong_shader.SetMaterial(diffuse, specular, 64.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 	cube.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+		cube.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
 	cube.UpdateValues(TestUpdateCube, window->LocalTime(), nullptr);
 
@@ -369,22 +362,29 @@ void DisplayDisc()
 	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
 	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
-	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
+	vec3 diffuse = vec3(0.0f , 0.0f , 0.9f);
 
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CCW);
 	//glEnable(GL_CULL_FACE);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 8.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
-	phong_shader.SetMaterial(diffuse , specular , 16.0f , ambient);
+	phong_shader.SetMaterial(diffuse , specular , 32.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	disc3.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 32.0f , vec3(1.0f , 1.0f , 1.0f));
+		disc3.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
 	disc3.UpdateValues(TestUpdateDisc , window->LocalTime(), nullptr);
 }
@@ -404,17 +404,24 @@ void DisplayPlane()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
-	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
+	phong_shader.SetMaterial(diffuse , specular , 4.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	plane2.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix, view_matrix, projection_matrix);
+		constant_shader.SetMaterial(diffuse, specular, 64.0f, vec3(1.0f, 1.0f, 1.0f));
+		plane2.Draw(true);
+		constant_shader.UnUse();
+	}
 	glutSwapBuffers();
+	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
 
 void DisplayGrid()
@@ -434,7 +441,6 @@ void DisplayGrid()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
 
 	vector<Constellation::PositionData> & pd = gc.GetPositionData();
 
@@ -442,13 +448,23 @@ void DisplayGrid()
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 150.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 
-	/*
-	*/
+	mat4 r = rotate(mat4() , radians(window->LocalTime() / 12.0f) , vec3(0.0f , 1.0f , 0.0f));
 
 	for (vector<Constellation::PositionData>::iterator iter = pd.begin(); iter < pd.end(); iter++)
 	{
-		mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
+		mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 20.0f) , vec3(0.0f , 1.0f , 0.0f));
 		model_matrix = translate(model_matrix , vec3(s * vec4((*iter).location , 1.0f)));
+
+		// Beginning of orientation code.
+		//
+		// There is an assumption here (we are aligning z axes) that the shape you're building have
+		// a natural facing down the z axis.
+		//
+		// The following orients the object's z axis along the axis held in outward_direction_vector.
+		// target_dir gets that value. The difference in direction from the z axis to the desired direction
+		// is captured by the dot product. The angle is retrieved with the acos. Then, if there's anything 
+		// to do (I suspect the if statement is NOT needed), a rotation axis is made by the cross product
+		// (rotating about it will swing the z axes around). Finally, the rotation is done.
 		vec3 target_dir = normalize((*iter).outward_direction_vector);
 		float rot_angle = acos(dot(target_dir , vec3(0.0f, 0.0f, 1.0f)));
 		if (fabs(rot_angle) > glm::epsilon<float>())
@@ -456,12 +472,23 @@ void DisplayGrid()
 			vec3 rot_axis = normalize(cross(target_dir , vec3(0.0f, 0.0f, 1.0f)));
 			model_matrix = rotate(model_matrix, rot_angle , rot_axis);
 		}
+		// End of orientation code.
+
 		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 1.0f));
 		phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
-		plane2.Draw(false);
+		cylinder2.Draw(false);
 		phong_shader.UnUse();
+		if (window->draw_normals)
+		{
+			constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+			constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+			cylinder2.Draw(true);
+			constant_shader.UnUse();
+		}
+		// Animate the rotation of the objects within the grid.
+		(*iter).outward_direction_vector = vec3(r * vec4((*iter).outward_direction_vector, 1.0f));
 	}
 	glutSwapBuffers();
 }
@@ -486,7 +513,6 @@ void DisplayCylinder()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CW);
 	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f, 1.0f, 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
@@ -497,14 +523,22 @@ void DisplayCylinder()
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	cylinder2.Draw(false);
 	phong_shader.UnUse();
+	if (window->draw_normals)
+	{
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+		cylinder2.Draw(true);
+		constant_shader.UnUse();
+	}
 	AdaptFreetype(our_font , scale(mat4(), vec3(0.01f, 0.01f, 0.01f)) , lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f)) , perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance) , strings , -400 , 0);
 	glutSwapBuffers();
 }
 
 void DisplayFunc()
 {
-	Window::current_time = float(glutGet(GLUT_ELAPSED_TIME)) / 1000.0f;
-	vec4 crimson(0.6f, 0.0f, 0.0f, 1.0f);
+	Window::UpdateTime();
+	glFrontFace(GL_CW);
+	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
@@ -512,25 +546,20 @@ void DisplayFunc()
 
 	glPolygonMode(GL_FRONT_AND_BACK , (window->wireframe ? GL_LINE : GL_FILL));
 
-	if (!window->is_paused)
+	if (window->DisplayFunc != nullptr)
 	{
-		if (window->DisplayFunc != nullptr)
-		{
-			window->DisplayFunc();
-			return;
-		}
-
-		#ifdef STEREO
-		glDrawBuffer(GL_BACK);
-		#endif
-		glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
-		glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glFrontFace(GL_CW);
-		//glEnable(GL_CULL_FACE);
-		DrawScene(window);
-		glutSwapBuffers();
+		window->DisplayFunc();
+		return;
 	}
+
+	#ifdef STEREO
+	glDrawBuffer(GL_BACK);
+	#endif
+	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	DrawScene(window);
+	glutSwapBuffers();
 }
 
 void TimerFunc(int period)
@@ -544,61 +573,51 @@ void IdleFunc()
 	Window::PostAllRedisplays(windows);
 }
 
-void InitializeWindows()
-{
-	for (unsigned int i = 0; i < windows.size(); i++)
-	{
-		windows[i].handle = glutCreateWindow(windows[i].window_name);
-		glutReshapeFunc(ReshapeFunc);
-		glutCloseFunc(CloseFunc);
-		glutDisplayFunc(DisplayFunc);
-		glutKeyboardFunc(KeyboardFunc);
-		if (i == 0)
-		{
-			//glutTimerFunc(1000 / 60 , TimerFunc , 1000 / 60);
-			glutIdleFunc(IdleFunc);
-		}
-	}
-}
 int main(int argc, char * argv[])
 {
 	srand(unsigned int(time(NULL)));
+
 	// glutInit must be the first thing to use OpenGL
 	glutInit(&argc, argv);
-	// Initializes the Develeoper's Imaging Library
+
+	// Initializes the Develeoper's Imaging Library. This is the library that will be used to load images in different formats
+	// for use as textures. This library is old - others are better in some ways but unusable in others.
 	ilInit();
-	// Add a line here for every shader defined. This will
-	// take care of loading and unloading.
+
+	// Add a line here for every shader defined. This will take care of loading and unloading.
 	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
-	// Adds objects to the world.
+
+	// Adds objects to the world. These instances are for the massive mashup of shapes.
 	Instance::DefineInstances(instances, NUMBER_OF_OBJECTS);
 
 	glutInitWindowSize(512, 512);
 	glutInitWindowPosition(-1, -1);
 	glutInitDisplayMode(DISPLAY_MODE);
-	// By setting this action, control is returned to our program when glutLeaveMainLoop
-	// is called. Without this, the program exits.
+
+	// By setting this action, control is returned to our program when glutLeaveMainLoop is called. Without this, the program exits.
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE , GLUT_ACTION_CONTINUE_EXECUTION);
-	// By setting this option, all windows created in the program share the same OpenGL context.
-	// This means all buffers and shaders and such need be instantiated only once.
+
+	// By setting this option, all windows created in the program share the same OpenGL context. This means all buffers and shaders and such need be instantiated only once.
 	glutSetOption(GLUT_RENDERING_CONTEXT , GLUT_USE_CURRENT_CONTEXT);
 
-	gc.Initialize(512);
+	// This is the grid constellation initialization. The preferred argument is n^2.
+	gc.Initialize(525);
 
-	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	// This vector is used to initialize all the window objects. 
+	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	//windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
 	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
-	InitializeWindows();
 	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
-	texture_file_names.push_back("DSC_0337.jpg");
-	texture_file_names.push_back("DSC_0338.jpg");
-	texture_file_names.push_back("DSC_1233.jpg");
-	texture_file_names.push_back("DSC_1623.jpg");
+	//texture_file_names.push_back("DSC_0337.jpg");
+	//texture_file_names.push_back("DSC_0338.jpg");
+	//texture_file_names.push_back("DSC_1233.jpg");
+	//texture_file_names.push_back("DSC_1623.jpg");
 
 	textures.resize(texture_file_names.size());
 	for (size_t i = 0; i < texture_file_names.size(); i++)
@@ -625,7 +644,11 @@ int main(int argc, char * argv[])
 	}
 
 	if (!ShaderInitializer::Initialize(&shaders))
-		exit(0);
+	{
+		cerr << "Hit enter to exit:";
+		cin.get();
+		return 0;
+	}
 
 	glutMainLoop();
 
