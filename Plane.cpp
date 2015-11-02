@@ -21,10 +21,10 @@ Plane::Plane(int divisionsX, int divisionsY)
 
 void Cube::AddTextureCoordinates()
 {
-	this->data.textures.push_back(vec2(0.0f , 0.0f));
-	this->data.textures.push_back(vec2(1.0f , 0.0f));
-	this->data.textures.push_back(vec2(1.0f , 1.0f));
 	this->data.textures.push_back(vec2(0.0f , 1.0f));
+	this->data.textures.push_back(vec2(1.0f , 1.0f));
+	this->data.textures.push_back(vec2(1.0f , 0.0f));
+	this->data.textures.push_back(vec2(0.0f , 0.0f));
 }
 
 // PreGLInitialize is used to establish an initial configuration of vertex
