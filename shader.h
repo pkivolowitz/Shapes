@@ -33,6 +33,7 @@ public:
 	virtual void SetMaterial(glm::vec3 diffuse_albedo, glm::vec3 specular_albedo, float specular_power, glm::vec3 ambient) = 0;
 	virtual void SetLightPosition(glm::vec3 light_position) {}
 	virtual void SelectSubroutine(int subroutine_index) {}
+	virtual void SetGlobalTime(float global_time) { }
 	virtual void EnableTexture(ILContainer & ilcontainer , GLuint texture_unit) {}
 
 	GLuint vertex_shader_id;

@@ -12,13 +12,15 @@ public:
 	void SetLightPosition(glm::vec3 light_position);
 	void SelectSubroutine(int subroutine_index);
 	void CustomSetup();
+	void SetGlobalTime(float global_time);
 	void EnableTexture(ILContainer & ilcontainer , GLuint texture_unit);
 
 	enum SubroutineIndices
 	{
 		CONSTANT = 0 ,
 		BASIC_PHONG = 1,
-		PHONG_WITH_TEXTURE = 2
+		PHONG_WITH_TEXTURE = 2,
+		SHADER_TOY_1 = 3
 	};
 
 
@@ -36,6 +38,7 @@ private:
 		GLuint ambient;
 		GLuint light_position;
 		GLuint base_texture_location;
+		GLuint global_time;
 	} uniforms;
 
 	std::vector<GLuint> subroutine_indices;

@@ -60,6 +60,11 @@ void PhongShader::SetLightPosition(glm::vec3 light_position)
 	glUniform3fv(uniforms.light_position, 1, (GLfloat *)(&light_position));
 }
 
+void PhongShader::SetGlobalTime(float global_time)
+{ 
+	glUniform1f(uniforms.global_time , global_time);
+}
+
 void PhongShader::CustomSetup()
 {
 	Shader::Use();
@@ -73,9 +78,11 @@ void PhongShader::CustomSetup()
 	uniforms.normal_matrix = glGetUniformLocation(this->program_id , "normal_matrix");
 	uniforms.projection_matrix = glGetUniformLocation(this->program_id , "proj_matrix");
 	uniforms.base_texture_location = glGetUniformLocation(this->program_id , "base_texture");
+	uniforms.global_time = glGetUniformLocation(this->program_id , "global_time");
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER, "Constant"));
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER, "PerPixelLighting"));
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "PPLWithTexture"));
+	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "ShaderToy1"));
 	Shader::UnUse();
 }
 
