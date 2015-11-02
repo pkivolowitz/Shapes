@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <vector>
 #include "ilcontainer.h"
 
 bool ILContainer::Initialize(const char * file_name)
@@ -8,6 +9,7 @@ bool ILContainer::Initialize(const char * file_name)
 
 	if ((this->il_handle = ilGenImage()) == BAD_IL_VALUE)
 		return false;
+
 	ilBindImage(this->il_handle);
 	if (!ilLoadImage(file_name))
 		return false;
@@ -42,10 +44,10 @@ void ILContainer::Bind(GLuint texture_unit)
 	which would be an error.
 */
 
-ILContainer::~ILContainer()
+void ILContainer::TakeDown()
 {
 	if (this->il_texture_handle != BAD_GL_VALUE)
-		glDeleteTextures(1, &this->il_texture_handle);
+		glDeleteTextures(1 , &this->il_texture_handle);
 	if (this->il_handle != BAD_IL_VALUE)
 		ilDeleteImage(this->il_handle);
 
@@ -53,42 +55,15 @@ ILContainer::~ILContainer()
 	this->il_texture_handle = BAD_GL_VALUE;
 }
 
-/* Do not use
-
-bool ILCubemapContainer::Initialize(const char * file_name, int width, int height, int offsetx, int offsety)
+ILContainer::~ILContainer()
 {
-	assert(this->il_handle == BAD_IL_VALUE);
-	if ((this->il_handle = ilGenImage()) == BAD_IL_VALUE)
-		return false;
-	ilBindImage(this->il_handle);
-	if (!ilLoadImage(file_name))
-		return false;
-
-	glGenTextures(7, this->il_texture_handle);
-	glBindTexture(GL_TEXTURE_2D, this->il_texture_handle[0]);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, ilGetInteger(IL_IMAGE_BPP), this->width = ilGetInteger(IL_IMAGE_WIDTH), this->height = ilGetInteger(IL_IMAGE_HEIGHT), 0, ilGetInteger(IL_IMAGE_FORMAT), GL_UNSIGNED_BYTE, ilGetData());
-	return true;
+	this->TakeDown();
 }
 
-void ILCubemapContainer::Bind(GLuint texture_unit)
+void ILContainer::TakeDown(std::vector<ILContainer> & textures)
 {
-	glActiveTexture(GL_TEXTURE0 + texture_unit);
-//	glBindTexture(GL_TEXTURE_2D, this->il_texture_handle);
+	for (size_t i = 0; i < textures.size(); i++)
+	{
+		textures[i].TakeDown();
+	}
 }
-
-ILCubemapContainer::~ILCubemapContainer()
-{
-	if (this->il_texture_handle[0] != BAD_GL_VALUE)
-		glDeleteTextures(7, this->il_texture_handle);
-	if (this->il_handle != BAD_IL_VALUE)
-		ilDeleteImage(this->il_handle);
-
-	this->il_handle = BAD_IL_VALUE;
-	this->il_texture_handle[0] = BAD_GL_VALUE;
-}
-
-*/

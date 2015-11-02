@@ -33,7 +33,8 @@ public:
 	
 	bool Initialize(const char * file_name);
 	void Bind(GLuint texture_unit = 0);
-
+	void TakeDown();
+	static void TakeDown(std::vector<ILContainer> & textures);
 	ILint width;
 	ILint height;
 	ILint format;
