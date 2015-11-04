@@ -653,6 +653,8 @@ int main(int argc, char * argv[])
 	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
+	windows[0].SetWindowTitle("NEW TITLE");
+
 	// This must be called AFTER an OpenGL context has been built.
 	if (glewInit() != GLEW_OK)
 	{
