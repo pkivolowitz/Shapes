@@ -18,6 +18,7 @@ Window::Window(char * window_name,  void(*DisplayFunc)() , void(*KeyboardFunc)(u
 	this->time_when_paused = 0.0f;
 	this->time_spent_paused = 0.0f;
 	this->is_paused = false;
+	this->handle = BAD_GL_VALUE;
 }
 
 Window * Window::FindCurrentWindow(std::vector<Window> & windows)
