@@ -64,3 +64,8 @@ void Window::InitializeWindows(std::vector<Window> & windows, void(*DisplayFunc)
 		}
 	}
 }
+
+void Window::SetWindowTitle(std::string new_title)
+{
+	glutSetWindowTitle(new_title.c_str());
+}
