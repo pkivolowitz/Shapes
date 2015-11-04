@@ -177,7 +177,7 @@
     <ClCompile Include="grid_constellation.cpp" />
     <ClCompile Include="ilcontainer.cpp" />
     <ClCompile Include="instance.cpp" />
-    <ClCompile Include="main_pk.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="my_freetype.cpp" />
     <ClCompile Include="phong_shader.cpp" />
     <ClCompile Include="plane.cpp" />
