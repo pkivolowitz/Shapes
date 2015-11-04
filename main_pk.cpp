@@ -75,7 +75,7 @@ void TestUpdatePlane(struct Shape::Data & data , float current_time , void * blo
 	for (int y = 0; y <= dimensions.y; y++)
 	{
 		for (int x = 0; x <= dimensions.x; x++ , i++)
-			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 2.0f + current_time * 2.0f) * sin(v[i].x * 2.0f + current_time * 2.0f) / 2.0f);
+			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 2.0f + current_time * 2.0f) /** sin(v[i].x * 2.0f + current_time * 2.0f)*/ / 2.0f);
 	}
 }
 
@@ -418,7 +418,7 @@ void DisplayPlane()
 	mat4 lightMatrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	vec3 light_pos = vec3(lightMatrix * vec4(0.0f , 0.0f , 10000.0f , 1.0f));
 
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 view_matrix = lookAt(vec3(10.0f , 0.0f , 0.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
@@ -460,8 +460,8 @@ void DisplayGrid()
 
 	vector<Constellation::PositionData> & pd = gc.GetPositionData();
 
-	mat4 s = scale(mat4() , vec3(50.0f , 50.0f , 1.0f));
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 150.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 s = scale(mat4() , vec3(50.0f , 50.0f , 50.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 100.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 
 	mat4 r = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -490,7 +490,7 @@ void DisplayGrid()
 		}
 		// End of orientation code.
 
-		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 1.0f));
+		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 2.0f));
 		phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
