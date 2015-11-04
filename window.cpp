@@ -46,11 +46,11 @@ void Window::PostAllRedisplays(std::vector<Window> & windows)
 
 void Window::InitializeWindows(std::vector<Window> & windows, void(*DisplayFunc)(void) , void(*KeyboardFunc)(unsigned char , int , int) , void(*CloseFunc)(void) , void(*ReshapeFunc)(int , int) , void(*IdleFunc)())
 {
-	if (windows.size() > 0)
-		throw std::length_error("Calling Window::InitializeWindows() a second time.");
-
 	for (unsigned int i = 0; i < windows.size(); i++)
 	{
+		if (windows[i].handle != BAD_GL_VALUE)
+			continue;
+
 		windows[i].handle = glutCreateWindow(windows[i].window_name);
 		glutReshapeFunc(ReshapeFunc);
 		glutCloseFunc(CloseFunc);
