@@ -93,9 +93,8 @@ vec4 ShaderToy1()
 
 	for(int i=0;i<3;i++)
 	{
-		vec2 uv;
 		vec2 p = fs_in.T;
-		uv = p;
+		vec2 uv = p;
 		p -= 0.5;
 		z +=.07;
 		l = length(p);
