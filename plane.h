@@ -15,6 +15,13 @@ protected:
 
 	int divisionsX;
 	int divisionsY;
+
+	void  SE(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
+	void SSW(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
+	void WSW(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
+	void  NW(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
+	void NNE(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
+	void ENE(glm::vec3 * v, int row , int col , glm::vec3 & sum , float & divisor);
 };
 
 class Cube : public Shape
