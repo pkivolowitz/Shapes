@@ -146,6 +146,8 @@ bool Plane::PreGLInitialize()
 	}
 
 	int i = 0;
+	int w = divisionsX + 1;
+
 	for (int y = 0; y < this->divisionsY; y++)
 	{
 		for (int x = 0; x < this->divisionsX; x++)
@@ -154,12 +156,12 @@ bool Plane::PreGLInitialize()
 			// beneath the current vertex. The order defines a clockwise winding.
 			this->data.indices.push_back(i);
 			this->data.indices.push_back(i + 1);
-			this->data.indices.push_back(i + divisionsX + 1);
+			this->data.indices.push_back(i + w);
 			// Bottom triangle - This associates the vertex to our right with the one below it and
 			// the one below the current vertex. This order defines a clockwise winding.
 			this->data.indices.push_back(i + 1);
-			this->data.indices.push_back(i + divisionsX + 2);
-			this->data.indices.push_back(i + divisionsX + 1);
+			this->data.indices.push_back(i + w + 1);
+			this->data.indices.push_back(i + w);
 			i++;
 		}
 		i++;
@@ -174,6 +176,97 @@ void Plane::NonGLTakeDown()
 
 void Cube::NonGLTakeDown()
 {
+}
+
+#define	RIGHT		(1)
+#define	DOWN		(this->divisionsX + 1)
+#define DOWN_LEFT	(this->divisionsX + 0)
+#define	LEFT		(-1)
+#define UP			-DOWN
+#define UP_RIGHT	-DOWN_LEFT
+
+void Plane::SE(vec3 * v, int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == this->divisionsY || col == this->divisionsX)
+		return;
+
+	a = normalize(*(v + RIGHT) - *v);
+	b = normalize(*(v + DOWN) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
+}
+
+void Plane::SSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == this->divisionsY || col == 0)
+		return;
+
+	a = normalize(*(v + DOWN) - *v);
+	b = normalize(*(v + DOWN_LEFT) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
+}
+
+void Plane::WSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == this->divisionsY || col == 0)
+		return;
+
+	a = normalize(*(v + DOWN_LEFT) - *v);
+	b = normalize(*(v + LEFT) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
+}
+
+void Plane::NW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == 0 || col == 0)
+		return;
+
+	a = normalize(*(v + LEFT) - *v);
+	b = normalize(*(v + UP) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
+}
+
+void Plane::NNE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == 0 || col == this->divisionsX)
+		return;
+
+	a = normalize(*(v + UP) - *v);
+	b = normalize(*(v + UP_RIGHT) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
+}
+
+void Plane::ENE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
+{
+	vec3 a , b;
+
+	if (row == 0 || col == this->divisionsX)
+		return;
+
+	a = normalize(*(v + UP_RIGHT) - *v);
+	b = normalize(*(v + RIGHT) - *v);
+
+	sum += normalize(cross(a , b));
+	divisor++;
 }
 
 void Plane::RecomputeNormals()
@@ -199,131 +292,15 @@ void Plane::RecomputeNormals()
 		for (int col = 0; col < w; col++, i++)
 		{
 			sum = vec3(0.0f);
-			if (col == 0)
-			{
-				if (row == divisionsY)
-				{
-					// This is the left edge and bottom row
-					a = normalize(v[i - w] - v[i]);
-					b = normalize(v[i - w + 1] - v[i]);
-					sum += normalize(cross(a , b));
-					// Here and where possible below, the assignments of b to a recognizes that
-					// we're examining triangles in a fixed order. Moving from one to the next
-					// in order means we do not have to repeat one of the normalizations because
-					// the line segment is shared between two adjacent triangles.
-					a = b;
-					b = normalize(v[i + 1] - v[i]);
-					sum += normalize(cross(a , b));
-					if (col == 0)
-					{
-						// This is the bottom row and left edge. We're done.
-						n[i] = -sum / 2.0f;
-					}
-					else
-					{
-						// This is the bottom row and NOT the left edge. One more triangle to do.
-						a = normalize(v[i - 1] - v[i]);
-						b = normalize(v[i - w] - v[i]);
-						sum += normalize(cross(a , b));
-						n[i] = -sum / 3.0f;
-					}
-				}
-				else
-				{
-					// This is the left edge but NOT the bottom row
-					a = normalize(v[i + 1] - v[i]);
-					b = normalize(v[i + w] - v[i]);
-					sum += normalize(cross(a , b));
-					if (row == 0)
-					{
-						// This is the top left corner
-						n[i] = -sum;
-					}
-					else
-					{
-						// This is a left edge lower down than the top left corner
-						a = normalize(v[i - w] - v[i]);
-						b = normalize(v[i - w + 1] - v[i]);
-						sum += normalize(cross(a , b));
-						a = b;
-						b = normalize(v[i + 1] - v[i]);
-						sum += normalize(cross(a , b));
-						// The triangle to the right and lower is already done.
-						n[i] = -sum / 3.0f;
-					}
-				}
-			}
-			else if (col == w - 1)
-			{
-				// This is the right edge
-				if (row < divisionsY)
-				{
-					// This is not the bottom row.
-					a = normalize(v[i + w] - v[i]);
-					b = normalize(v[i + w - 1] - v[i]);
-					sum += normalize(cross(a , b));
-					a = b;
-					b = normalize(v[i - 1] - v[i]);
-					sum += normalize(cross(a , b));
-					if (row == 0)
-					{
-						// This is the upper right corner
-						n[i] = -sum / 2.0f;
-					}
-					else
-					{
-						// The is the right edge in the middle.
-						a = b;
-						b = normalize(v[i - w] - v[i]);
-						sum += normalize(cross(a , b));
-						n[i] = -sum / 3.0f;
-					}
-				}
-				else
-				{
-					// This is the lower right corner
-					a = normalize(v[i - 1] - v[i]);
-					b = normalize(v[i - w] - v[i]);
-					n[i] = -normalize(cross(a , b));
-				}
-			}
-			else
-			{
-				// This is in the middle horizontally - now consider the vertical
-				if (row < divisionsY)
-				{
-					a = normalize(v[i + 1] - v[i]);
-					b = normalize(v[i + w] - v[i]);
-					sum += normalize(cross(a , b));
-					a = b;
-					b = normalize(v[i + w - 1] - v[i]);
-					sum += normalize(cross(a , b));
-					a = b;
-					b = normalize(v[i - 1] - v[i]);
-					sum += normalize(cross(a , b));
-				}
-				if (row == 0)
-				{
-					// We're in the middle horizontally and on the top row
-					n[i] = -sum / 3.0f;
-				}
-				else
-				{
-					// We are in the middle in both dimensions. The calculations
-					// below us are already done. Just do above us.
-					a = normalize(v[i - 1] - v[i]);
-					b = normalize(v[i - w] - v[i]);
-					sum += normalize(cross(a , b));
-					a = b;
-					b = normalize(v[i - w + 1] - v[i]);
-					sum += normalize(cross(a , b));
-					a = b;
-					b = normalize(v[i + 1] - v[i]);
-					sum += normalize(cross(a , b));
-					n[i] = -sum / (row == divisionsY ? 3.0f: 6.0f);
-				}
-			}
-			// Attempt to update the normal visualization coordinates.
+			float divisor = 0.0f;
+			SE(&v[i] , row , col , sum , divisor);
+			SSW(&v[i] , row , col , sum , divisor);
+			WSW(&v[i] , row , col , sum , divisor);
+			NW(&v[i] , row , col , sum , divisor);
+			NNE(&v[i] , row , col , sum , divisor);
+			ENE(&v[i] , row , col , sum , divisor);
+			assert(divisor > 0.0f);
+			n[i] = -sum / divisor;
 			// As we leave processing of the current vertex, we take the opportunity to
 			// update the visualization vectors. The beginning of each visualization vector
 			// is the position of the vertex itself. The other end of each visualization 
