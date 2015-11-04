@@ -34,6 +34,7 @@ void PhongShader::Use(mat4 &model_matrix, mat4 &view_matrix, mat4 &projection_ma
 
 void PhongShader::UnUse()
 {
+	assert(this->is_used == true);
 	this->GLReturnedError("PhongShader::UnUse() - entering");
 	Shader::UnUse();
 	this->GLReturnedError("PhongShader::UnUse() - exiting");
@@ -41,6 +42,7 @@ void PhongShader::UnUse()
 
 void PhongShader::EnableTexture(ILContainer & ilcontainer , GLuint texture_unit)
 {
+	assert(this->is_used == true);
 	glUniform1i(this->uniforms.base_texture_location , texture_unit);
 	ilcontainer.Bind(texture_unit);
 	glEnable(GL_TEXTURE_2D);
@@ -48,6 +50,7 @@ void PhongShader::EnableTexture(ILContainer & ilcontainer , GLuint texture_unit)
 
 void PhongShader::SelectSubroutine(int subroutine_index)
 {
+	assert(this->is_used == true);
 	if (subroutine_index < 0 || subroutine_index >= int(this->subroutine_indices.size()))
 		throw std::invalid_argument("PhongShader::SelectSubroutine() - bad index");
 
@@ -62,6 +65,7 @@ void PhongShader::SetLightPosition(glm::vec3 light_position)
 
 void PhongShader::SetGlobalTime(float global_time)
 { 
+	assert(this->is_used == true);
 	glUniform1f(uniforms.global_time , global_time);
 }
 
