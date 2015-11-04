@@ -35,7 +35,7 @@ Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(32, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
-Plane plane2(64 , 64);
+Plane plane2(32 , 32);
 Cube cube;
 GridConstellation gc;
 
@@ -423,8 +423,9 @@ void DisplayPlane()
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 	phong_shader.SetLightPosition(light_pos);
-	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
-	phong_shader.EnableTexture(textures[0] , 0);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
+	//phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	//phong_shader.EnableTexture(textures[0] , 0);
 	plane2.Draw(false);
 	phong_shader.UnUse();
 
