@@ -32,7 +32,7 @@ freetype::font_data our_font;
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
 Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
-Cylinder cylinder1(32, 8, pi<float>() * 2.0f, 1.0f, 0.0f);
+Cylinder cylinder1(32, 4,  pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
 Plane plane2(32, 32);
@@ -412,7 +412,7 @@ void DisplayPlane()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 10.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 lightMatrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -423,9 +423,9 @@ void DisplayPlane()
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 	phong_shader.SetLightPosition(light_pos);
-	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
-	//phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
-	//phong_shader.EnableTexture(textures[0] , 0);
+	//phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
+	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	phong_shader.EnableTexture(textures[0] , 0);
 	plane2.Draw(false);
 	phong_shader.UnUse();
 
@@ -437,7 +437,7 @@ void DisplayPlane()
 		constant_shader.UnUse();
 	}
 	glutSwapBuffers();
-//	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
+	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
 
 void DisplayGrid()
@@ -532,6 +532,7 @@ void DisplayCylinder()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f, 1.0f, 0.0f));
+	model_matrix = rotate(model_matrix , radians(15.0f) , vec3(1.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
