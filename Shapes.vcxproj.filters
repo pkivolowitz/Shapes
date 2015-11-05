@@ -41,9 +41,6 @@
     <ClCompile Include="constant_shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="cylinder.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ilcontainer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -80,9 +77,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="constant_shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cylinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ilcontainer.h">

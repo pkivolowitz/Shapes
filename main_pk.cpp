@@ -32,10 +32,10 @@ freetype::font_data our_font;
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
 Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
-Cylinder cylinder1(32, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
+Cylinder cylinder1(32, 8, pi<float>() * 2.0f, 1.0f, 0.0f);
 Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
-Plane plane2(32 , 32);
+Plane plane2(32, 32);
 Cube cube;
 GridConstellation gc;
 
@@ -412,7 +412,7 @@ void DisplayPlane()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 10.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 lightMatrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -437,7 +437,7 @@ void DisplayPlane()
 		constant_shader.UnUse();
 	}
 	glutSwapBuffers();
-	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
+//	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
 
 void DisplayGrid()
@@ -541,13 +541,13 @@ void DisplayCylinder()
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
 	phong_shader.EnableTexture(textures[1] , 0);
-	cylinder2.Draw(false);
+	cylinder1.Draw(false);
 	phong_shader.UnUse();
 	if (window->draw_normals)
 	{
 		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
 		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
-		cylinder2.Draw(true);
+		cylinder1.Draw(true);
 		constant_shader.UnUse();
 	}
 	AdaptFreetype(our_font , scale(mat4(), vec3(0.01f, 0.01f, 0.01f)) , lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f)) , perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance) , strings , -400 , 0);
@@ -648,9 +648,9 @@ int main(int argc, char * argv[])
 	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
-	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	//windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
 	windows[0].SetWindowTitle("NEW TITLE");
