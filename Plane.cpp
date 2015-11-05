@@ -187,7 +187,7 @@ void Cube::NonGLTakeDown()
 
 void Plane::SE(vec3 * v, int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == this->divisionsY || col == this->divisionsX)
 		return;
@@ -195,13 +195,18 @@ void Plane::SE(vec3 * v, int row , int col , glm::vec3 & sum , float & divisor)
 	a = normalize(*(v + RIGHT) - *v);
 	b = normalize(*(v + DOWN) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::SSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == this->divisionsY || col == 0)
 		return;
@@ -209,13 +214,18 @@ void Plane::SSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor
 	a = normalize(*(v + DOWN) - *v);
 	b = normalize(*(v + DOWN_LEFT) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::WSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == this->divisionsY || col == 0)
 		return;
@@ -223,13 +233,18 @@ void Plane::WSW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor
 	a = normalize(*(v + DOWN_LEFT) - *v);
 	b = normalize(*(v + LEFT) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::NW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == 0 || col == 0)
 		return;
@@ -237,13 +252,18 @@ void Plane::NW(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 	a = normalize(*(v + LEFT) - *v);
 	b = normalize(*(v + UP) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::NNE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == 0 || col == this->divisionsX)
 		return;
@@ -251,13 +271,18 @@ void Plane::NNE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor
 	a = normalize(*(v + UP) - *v);
 	b = normalize(*(v + UP_RIGHT) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::ENE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor)
 {
-	vec3 a , b;
+	vec3 a , b, s;
 
 	if (row == 0 || col == this->divisionsX)
 		return;
@@ -265,8 +290,13 @@ void Plane::ENE(vec3 * v , int row , int col , glm::vec3 & sum , float & divisor
 	a = normalize(*(v + UP_RIGHT) - *v);
 	b = normalize(*(v + RIGHT) - *v);
 
-	sum += normalize(cross(a , b));
-	divisor++;
+	s = normalize(cross(a , b));
+
+	if (s == s)
+	{
+		sum += s;
+		divisor++;
+	}
 }
 
 void Plane::RecomputeNormals()
@@ -390,11 +420,11 @@ Cylinder::Cylinder(int slices , int stacks , float span , float back_radius , fl
 	if (back_radius == 0.0f && front_radius == 0.0f)
 		throw std::invalid_argument("bad radii");
 
-	if (back_radius == 0.0f)
-		back_radius = epsilon<float>();
+	if (abs(back_radius) <= 0.00001f)
+		back_radius = 0.00001f;
 
-	if (front_radius == 0.0f)
-		front_radius = epsilon<float>();
+	if (abs(front_radius) <= 0.00001f)
+		front_radius = 0.00001f;
 
 	this->slices = abs(slices);
 	this->stacks = stacks;
