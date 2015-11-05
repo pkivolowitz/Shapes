@@ -390,6 +390,12 @@ Cylinder::Cylinder(int slices , int stacks , float span , float back_radius , fl
 	if (back_radius == 0.0f && front_radius == 0.0f)
 		throw std::invalid_argument("bad radii");
 
+	if (back_radius == 0.0f)
+		back_radius = epsilon<float>();
+
+	if (front_radius == 0.0f)
+		front_radius = epsilon<float>();
+
 	this->slices = abs(slices);
 	this->stacks = stacks;
 	this->fr = front_radius;
