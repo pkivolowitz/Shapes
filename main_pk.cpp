@@ -17,7 +17,6 @@ using namespace glm;
 
 //#define	FULL_SCREEN
 #define	MOVE
-//#define	SHOW_NORMALS
 
 #ifdef USE_STEREO
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_STEREO)
@@ -25,7 +24,7 @@ using namespace glm;
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE)
 #endif // USE_STEREO
 
-const int NUMBER_OF_OBJECTS = 512;
+const int NUMBER_OF_OBJECTS = 32;
 vector<Instance> instances;
 freetype::font_data our_font;
 
@@ -248,6 +247,7 @@ void DrawScene(Window * window)
 			model_matrix = scale(model_matrix, vec3(0.25f, 0.25f, 0.25f));
 
 		phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+		phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 		phong_shader.SetMaterial(instances[i].diffuse, specular, 32.0f, ambient);
 		phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 
@@ -260,23 +260,16 @@ void DrawScene(Window * window)
 			disc3.Draw(false);
 			break;
 		case 2:
+			phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+			phong_shader.EnableTexture(textures[2], 0);
 			plane2.Draw(false);
+			glDisable(GL_TEXTURE_2D);
 			break;
 		case 3:
 			cube.Draw(false);
 			break;
 		}
 		phong_shader.UnUse();
-
-		#ifdef SHOW_NORMALS
-		if (i == 0)
-		{
-			constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-			constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 0.0f, 0.0f));
-			disc1.Draw(true);
-			constant_shader.UnUse();
-		}
-		#endif
 	}
 
 	model_matrix = mat4();
@@ -288,13 +281,6 @@ void DrawScene(Window * window)
 	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder1.Draw(false);
 	phong_shader.UnUse();
-
-#ifdef SHOW_NORMALS
-	constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-	constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 1.0f, 1.0f));
-	cylinder.Draw(true);
-	constant_shader.UnUse();
-#endif
 
 	model_matrix = rotate(mz, radians(90.0f), y_axis);
 	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
@@ -424,7 +410,7 @@ void DisplayPlane()
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 	phong_shader.SetLightPosition(light_pos);
 	//phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
-	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	phong_shader.SelectSubroutine(PhongShader::VIGNETTE);
 	phong_shader.EnableTexture(textures[0] , 0);
 	plane2.Draw(false);
 	phong_shader.UnUse();
@@ -647,7 +633,7 @@ int main(int argc, char * argv[])
 
 	// This vector is used to initialize all the window objects. 
 	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
@@ -695,90 +681,3 @@ int main(int argc, char * argv[])
 	ILContainer::TakeDown(textures);
 	return 0;
 }
-
-/*
-Correct method
-The Toe - in method while
-giving workable stereo
-pairs is not correct, it
-also introduces vertical
-parallax which is most
-noticeable for objects
-in the outer field of
-view.The correct method
-is to use what is
-sometimes known as the
-"parallel axis
-asymmetric frustum
-perspective projection".
-In this case the view
-vectors for each camera
-remain parallel and a
-glFrustum() is used to
-describe the perspective
-projection.
-3D Stereo Rendering Using OpenGL(and GLUT) ???4 / 6
-http://astronomy.swin.edu.au/~pbourke/opengl/stereogl/ 2005-3-31
-
-	// Misc stuff
-	ratio = window.aspect;
-	radians = radians(window.fovy);
-	wd2 = near * tan(radians);
-	ndfl = near / camera.focallength;
-
-	// Clear the buffers
-	glDrawBuffer(GL_BACK_LEFT);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if (stereo) {
-		glDrawBuffer(GL_BACK_RIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	if (stereo) {
-		mat4 projection_matrix;
-
-		// Derive the two eye positions 
-		CROSSPROD(camera.vd, camera.vu, r);
-		normalise(r);
-		r *= camera.eyesep / 2.0f;
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		float left = -ratio * wd2 - 0.5 * camera.eyesep * ndfl;
-		float right = ratio * wd2 - 0.5 * camera.eyesep * ndfl;
-		float top = wd2;
-		float bottom = -wd2;
-		projection_matrix = frustum(left, right, bottom, top, near, far);
-
-		glMatrixMode(GL_MODELVIEW);
-		glDrawBuffer(GL_BACK_RIGHT);
-		glLoadIdentity();
-		gluLookAt(camera.vp.x + r.x, camera.vp.y + r.y, camera.vp.z + r.z,
-			camera.vp.x + r.x + camera.vd.x,
-			camera.vp.y + r.y + camera.vd.y,
-			camera.vp.z + r.z + camera.vd.z,
-			camera.vu.x, camera.vu.y, camera.vu.z);
-		MakeLighting();
-		MakeGeometry();
-
-
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		left = -ratio * wd2 + 0.5 * camera.eyesep * ndfl;
-		right = ratio * wd2 + 0.5 * camera.eyesep * ndfl;
-		top = wd2;
-		bottom = -wd2;
-		frustum(left, right, bottom, top, near, far);
-
-		glMatrixMode(GL_MODELVIEW);
-		glDrawBuffer(GL_BACK_LEFT);
-		glLoadIdentity();
-		gluLookAt(camera.vp.x - r.x, camera.vp.y - r.y, camera.vp.z - r.z,
-			camera.vp.x - r.x + camera.vd.x,
-			camera.vp.y - r.y + camera.vd.y,
-			camera.vp.z - r.z + camera.vd.z,
-			camera.vu.x, camera.vu.y, camera.vu.z);
-		MakeLighting();
-		MakeGeometry(); 
-*/
