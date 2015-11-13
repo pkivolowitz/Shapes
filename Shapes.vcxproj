@@ -158,7 +158,6 @@
   <ItemGroup>
     <ClInclude Include="constant_shader.h" />
     <ClInclude Include="constellation.h" />
-    <ClInclude Include="cylinder.h" />
     <ClInclude Include="disc.h" />
     <ClInclude Include="grid_constellation.h" />
     <ClInclude Include="ilcontainer.h" />
@@ -172,12 +171,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="constant_shader.cpp" />
-    <ClCompile Include="cylinder.cpp" />
     <ClCompile Include="disc.cpp" />
     <ClCompile Include="grid_constellation.cpp" />
     <ClCompile Include="ilcontainer.cpp" />
     <ClCompile Include="instance.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main_pk.cpp" />
     <ClCompile Include="my_freetype.cpp" />
     <ClCompile Include="phong_shader.cpp" />
     <ClCompile Include="plane.cpp" />
