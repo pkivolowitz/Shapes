@@ -29,9 +29,6 @@
     <ClCompile Include="shape.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -42,9 +39,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="constant_shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cylinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ilcontainer.cpp">
@@ -65,6 +59,15 @@
     <ClCompile Include="grid_constellation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="main_pk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="fbo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="blurshader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="shape.h">
@@ -80,9 +83,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="constant_shader.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cylinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ilcontainer.h">
@@ -106,6 +106,12 @@
     <ClInclude Include="constellation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="fbo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="blurshader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="per-fragment-phong.fs.glsl">
@@ -118,6 +124,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="constant.fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="blur.fs.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="blur.vs.glsl">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

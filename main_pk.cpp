@@ -6,6 +6,7 @@
 #include "plane.h"
 #include "phong_shader.h"
 #include "constant_shader.h"
+#include "blurshader.h"
 #include "ilcontainer.h"
 #include "instance.h"
 #include "window.h"
@@ -15,9 +16,57 @@
 using namespace std;
 using namespace glm;
 
-//#define	FULL_SCREEN
+bool CheckGLErrors(const char * caller)
+{
+
+	GLenum e;
+	bool r = true;
+
+	while ((e = glGetError()) != GL_NO_ERROR)
+	{
+		r = false;
+		cout << caller << " " << gluErrorString(e) << endl;
+	}
+	return r;
+}
+
+vector<string> instructions = {
+	"'b' - toggle blur",
+	"'f' - toggle full screen",
+	"      fails on Intel GPU",
+	"'i' - toggle instructions",
+	"'l' and 'L' - line width",
+	"'p' - toggle pause",
+	"'z' and 'Z' - zoom",
+	"'x' and ESC - exit"
+};
+
+void DisplayInstructions(int w , int h)
+{
+	glLineWidth(1.0f);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glColor3f(1.0f , 1.0f , 1.0f);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0 , w , 0 , h , 1 , 10);
+	glViewport(0 , 0 , w , h);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	int height = 19;
+	glTranslated(10 , height * instructions.size() , -5.5);
+	glScaled(0.1 , 0.1 , 1.0);
+	for (auto i = instructions.begin(); i < instructions.end(); ++i)
+	{
+		glPushMatrix();
+		glutStrokeString(GLUT_STROKE_MONO_ROMAN , (const unsigned char *) (*i).c_str());
+		glPopMatrix();
+		glTranslated(0 , -(height + 1) * 10 , 0);
+	}
+}
+
 #define	MOVE
-//#define	SHOW_NORMALS
 
 #ifdef USE_STEREO
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_STEREO)
@@ -25,17 +74,18 @@ using namespace glm;
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE)
 #endif // USE_STEREO
 
-const int NUMBER_OF_OBJECTS = 512;
+const int NUMBER_OF_OBJECTS = 32;
 vector<Instance> instances;
 freetype::font_data our_font;
+FrameBufferObject fbo;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
 Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
-Cylinder cylinder1(32, 8, pi<float>() * 2.0f, 1.0f, 1.0f);
+Cylinder cylinder1(32, 4,  pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
-Plane plane2(64 , 64);
+Plane plane2(32, 32);
 Cube cube;
 GridConstellation gc;
 
@@ -45,6 +95,8 @@ vec3 up(0.0f, 1.0f, 0.0f);
 
 PhongShader phong_shader;
 ConstantShader constant_shader;
+BlurShader blur_shader;
+
 vector<ShaderInitializer> shaders;
 vector<Window> windows;
 vector<ILContainer> textures;
@@ -75,7 +127,7 @@ void TestUpdatePlane(struct Shape::Data & data , float current_time , void * blo
 	for (int y = 0; y <= dimensions.y; y++)
 	{
 		for (int x = 0; x <= dimensions.x; x++ , i++)
-			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 2.0f + current_time * 2.0f) * sin(v[i].x * 2.0f + current_time * 2.0f) / 2.0f);
+			v[i] = vec3(v[i].x , v[i].y , cos(v[i].y * 2.0f + current_time * 2.0f) /** sin(v[i].x * 2.0f + current_time * 2.0f)*/ / 2.0f);
 	}
 }
 
@@ -164,16 +216,24 @@ void KeyboardFunc(unsigned char c, int x, int y)
 			window->draw_normals = !window->draw_normals;
 			break;
 
+		case 'f':
+			window->full_screen = !window->full_screen;
+			(window->full_screen) ? glutFullScreen() : glutLeaveFullScreen();
+			break;
+
+		case 'b':
+			window->blur = !window->blur;
+			break;
+
+		case 'i':
+			window->instructions = !window->instructions;
+			break;
+
 		case 'p':
 			if (!window->is_paused)
 			{
-				// We are being paused. 
-				// Store away the current time.
+				// We are being paused. Store away the current time.
 				window->time_when_paused = Window::CurrentTime();
-				
-				//cout << left << setw(10) << "P when: " << setprecision(4) << window->time_when_paused;
-				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
-				//cout << " Local: " << setprecision(4) << window->LocalTime() << endl;
 			}
 			else
 			{
@@ -182,13 +242,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 				// be subtracted from future gets of the current time.
 				//bug here
 				float elapsed_time_this_pause = Window::CurrentTime() - window->time_when_paused;
-				assert(elapsed_time_this_pause > 0);
 				window->time_spent_paused += elapsed_time_this_pause;
-
-				//cout << left << setw(10) << "U when: " << setprecision(4) << window->time_when_paused;
-				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
-				//cout << " Local: " << setprecision(4) << window->LocalTime();
-				//cout << " Current: " << setprecision(6) << Window::CurrentTime() << endl;
 			}
 			window->is_paused = !window->is_paused;
 			break;
@@ -248,6 +302,7 @@ void DrawScene(Window * window)
 			model_matrix = scale(model_matrix, vec3(0.25f, 0.25f, 0.25f));
 
 		phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+		phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 		phong_shader.SetMaterial(instances[i].diffuse, specular, 32.0f, ambient);
 		phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
 
@@ -260,23 +315,16 @@ void DrawScene(Window * window)
 			disc3.Draw(false);
 			break;
 		case 2:
+			phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+			phong_shader.EnableTexture(textures[2], 0);
 			plane2.Draw(false);
+			glDisable(GL_TEXTURE_2D);
 			break;
 		case 3:
 			cube.Draw(false);
 			break;
 		}
 		phong_shader.UnUse();
-
-		#ifdef SHOW_NORMALS
-		if (i == 0)
-		{
-			constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-			constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 0.0f, 0.0f));
-			disc1.Draw(true);
-			constant_shader.UnUse();
-		}
-		#endif
 	}
 
 	model_matrix = mat4();
@@ -288,13 +336,6 @@ void DrawScene(Window * window)
 	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder1.Draw(false);
 	phong_shader.UnUse();
-
-#ifdef SHOW_NORMALS
-	constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-	constant_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, vec3(1.0f, 1.0f, 1.0f));
-	cylinder.Draw(true);
-	constant_shader.UnUse();
-#endif
 
 	model_matrix = rotate(mz, radians(90.0f), y_axis);
 	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
@@ -404,37 +445,102 @@ void DisplayPlane()
 		return;
 
 	glViewport(0, 0, window->size.x, window->size.y);
-	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
+	vec4 clear_color(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.0f , 0.0f , 0.0f);
 	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
 	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
 
-	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	if (window->blur)
+	{
+		// The user has elected to blur and accumulate (coming next) their drawing.
+		// So, instead of drawing to the screen, the user must draw into our framebuffer's
+		// color attachment 2 where it will be swept up in a blurring operation.
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , fbo.framebuffer_handle);
+		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+
+		// Since we will be drawing into the framebuffer rather than the screen, the
+		// viewport must be appropriately resized.
+		glViewport(0 , 0 , fbo.size.x , fbo.size.y);
+
+		CheckGLErrors("DisplayPlane() after setting drawbuffer");
+	}
+	glClearColor(clear_color.r , clear_color.g , clear_color.b , 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glEnable(GL_DEPTH_TEST);
-	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 lightMatrix = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	vec3 light_pos = vec3(lightMatrix * vec4(0.0f , 0.0f , 10000.0f , 1.0f));
 
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 view_matrix = lookAt(vec3(10.0f , 0.0f , 0.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 	phong_shader.SetLightPosition(light_pos);
+	phong_shader.SetGlobalTime(window->CurrentTime());
 	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	//phong_shader.SelectSubroutine(PhongShader::VIGNETTE);
 	phong_shader.EnableTexture(textures[0] , 0);
 	plane2.Draw(false);
 	phong_shader.UnUse();
 
-	if (window->draw_normals)
+	if (window->blur)
 	{
-		constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-		constant_shader.SetMaterial(diffuse, specular, 64.0f, vec3(1.0f, 1.0f, 1.0f));
+		// The user has elected to blur etc. Rather than having rendered to the screen,
+		// we have drawn to the framebuffer color attachment 2. Now we must blur the drawing.
+		glDisable(GL_BLEND);
+		glDisable(GL_DEPTH_TEST);
+		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
+		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
+
+		if (window->draw_normals)
+		{
+			glEnable(GL_DEPTH_TEST);
+			glBindFramebuffer(GL_FRAMEBUFFER , fbo.framebuffer_handle);
+			glDrawBuffer(GL_COLOR_ATTACHMENT2);
+
+			constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+			constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+			plane2.Draw(true);
+			constant_shader.UnUse();
+			glDrawBuffer(0);
+			glBindFramebuffer(GL_FRAMEBUFFER , 0);
+		}
+
+		// First, unbind from the framebuffer for drawing so that the destination goes
+		// back to the screen.
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , 0);
+		glDrawBuffer(GL_BACK);
+		glClearBufferfv(GL_COLOR , 0 , value_ptr(clear_color));
+		CheckGLErrors("DisplayFunc() unbound the draw framebuffer");
+
+		// Bind the framebuffer as the source for the following blit.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER , fbo.framebuffer_handle);
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		glBlitFramebuffer(0 , 0 , fbo.size.x , fbo.size.y , 0 , 0 , window->size.x , window->size.y , GL_COLOR_BUFFER_BIT , GL_LINEAR);
+
+		// Unuse the framebuffer as the source.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER , 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , 0);
+	}
+	else if (window->draw_normals)
+	{
+		glEnable(GL_DEPTH_TEST);
+		glViewport(0 , 0 , window->size.x , window->size.y);
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
 		plane2.Draw(true);
 		constant_shader.UnUse();
 	}
+
+
+	if (window->instructions)
+		DisplayInstructions(window->size.x , window->size.y);
+
 	glutSwapBuffers();
 	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
@@ -459,8 +565,8 @@ void DisplayGrid()
 
 	vector<Constellation::PositionData> & pd = gc.GetPositionData();
 
-	mat4 s = scale(mat4() , vec3(50.0f , 50.0f , 1.0f));
-	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 150.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
+	mat4 s = scale(mat4() , vec3(50.0f , 50.0f , 50.0f));
+	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 100.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
 
 	mat4 r = rotate(mat4() , radians(window->LocalTime() * 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -489,7 +595,7 @@ void DisplayGrid()
 		}
 		// End of orientation code.
 
-		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 1.0f));
+		model_matrix = scale(model_matrix , vec3(2.0f, 2.0f, 2.0f));
 		phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
@@ -509,7 +615,6 @@ void DisplayGrid()
 	}
 	glutSwapBuffers();
 }
-
 
 void DisplayCylinder()
 {
@@ -531,6 +636,7 @@ void DisplayCylinder()
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f, 1.0f, 0.0f));
+	model_matrix = rotate(model_matrix , radians(15.0f) , vec3(1.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
 
 	mat4 view_matrix = lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
@@ -540,13 +646,13 @@ void DisplayCylinder()
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
 	phong_shader.EnableTexture(textures[1] , 0);
-	cylinder2.Draw(false);
+	cylinder1.Draw(false);
 	phong_shader.UnUse();
 	if (window->draw_normals)
 	{
 		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
 		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
-		cylinder2.Draw(true);
+		cylinder1.Draw(true);
 		constant_shader.UnUse();
 	}
 	AdaptFreetype(our_font , scale(mat4(), vec3(0.01f, 0.01f, 0.01f)) , lookAt(vec3(0.0f , 0.0f , 10.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f)) , perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance) , strings , -400 , 0);
@@ -626,6 +732,7 @@ int main(int argc, char * argv[])
 	// Add a line here for every shader defined. This will take care of loading and unloading.
 	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
+	shaders.push_back(ShaderInitializer(&blur_shader , "blur.vs.glsl" , "blur.fs.glsl" , "blur shader failed to initialize"));
 
 	// Adds objects to the world. These instances are for the massive mashup of shapes.
 	Instance::DefineInstances(instances, NUMBER_OF_OBJECTS);
@@ -645,136 +752,49 @@ int main(int argc, char * argv[])
 
 	// This vector is used to initialize all the window objects. 
 	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
-	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	//windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
+
+	windows[0].SetWindowTitle("NEW TITLE");
+	bool ok = true;
 
 	// This must be called AFTER an OpenGL context has been built.
 	if (glewInit() != GLEW_OK)
 	{
 		cerr << "GLEW failed to initialize." << endl;
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		ok = false;
 	}
 
 	// This must be called AFTER initializing GLEW - else non of the 
 	// new GL features will be found.
-	if (!ShaderInitializer::Initialize(&shaders))
+	if (ok && !ShaderInitializer::Initialize(&shaders))
 	{
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		cerr << "ShaderInitializer::Initializer() failed." << endl;
+		ok = false;
 	}
 
-	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
+	if (ok)
+		our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
 	
-	// Add any textures needed here. This will someday be replaced with a function
-	// doing the same thing but taking its list of textures from a URI.
+	if (ok && !fbo.Initialize(glm::ivec2(1920 , 1200) , 3 , true))
+	{
+		cerr << "fbo.Initialize() failed." << endl;
+		ok = false;
+	}
+
 	if (!InitializeTextures())
 	{
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		ok = false;
 	}
 
-#ifdef FULL_SCREEN
-	glutFullScreen();
-#endif
-	
 	glutMainLoop();
 
 	ShaderInitializer::TakeDown(&shaders);
 	ILContainer::TakeDown(textures);
+	system("pause");
 	return 0;
 }
-
-/*
-Correct method
-The Toe - in method while
-giving workable stereo
-pairs is not correct, it
-also introduces vertical
-parallax which is most
-noticeable for objects
-in the outer field of
-view.The correct method
-is to use what is
-sometimes known as the
-"parallel axis
-asymmetric frustum
-perspective projection".
-In this case the view
-vectors for each camera
-remain parallel and a
-glFrustum() is used to
-describe the perspective
-projection.
-3D Stereo Rendering Using OpenGL(and GLUT) ???4 / 6
-http://astronomy.swin.edu.au/~pbourke/opengl/stereogl/ 2005-3-31
-
-	// Misc stuff
-	ratio = window.aspect;
-	radians = radians(window.fovy);
-	wd2 = near * tan(radians);
-	ndfl = near / camera.focallength;
-
-	// Clear the buffers
-	glDrawBuffer(GL_BACK_LEFT);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	if (stereo) {
-		glDrawBuffer(GL_BACK_RIGHT);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	}
-
-	if (stereo) {
-		mat4 projection_matrix;
-
-		// Derive the two eye positions 
-		CROSSPROD(camera.vd, camera.vu, r);
-		normalise(r);
-		r *= camera.eyesep / 2.0f;
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		float left = -ratio * wd2 - 0.5 * camera.eyesep * ndfl;
-		float right = ratio * wd2 - 0.5 * camera.eyesep * ndfl;
-		float top = wd2;
-		float bottom = -wd2;
-		projection_matrix = frustum(left, right, bottom, top, near, far);
-
-		glMatrixMode(GL_MODELVIEW);
-		glDrawBuffer(GL_BACK_RIGHT);
-		glLoadIdentity();
-		gluLookAt(camera.vp.x + r.x, camera.vp.y + r.y, camera.vp.z + r.z,
-			camera.vp.x + r.x + camera.vd.x,
-			camera.vp.y + r.y + camera.vd.y,
-			camera.vp.z + r.z + camera.vd.z,
-			camera.vu.x, camera.vu.y, camera.vu.z);
-		MakeLighting();
-		MakeGeometry();
-
-
-
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		left = -ratio * wd2 + 0.5 * camera.eyesep * ndfl;
-		right = ratio * wd2 + 0.5 * camera.eyesep * ndfl;
-		top = wd2;
-		bottom = -wd2;
-		frustum(left, right, bottom, top, near, far);
-
-		glMatrixMode(GL_MODELVIEW);
-		glDrawBuffer(GL_BACK_LEFT);
-		glLoadIdentity();
-		gluLookAt(camera.vp.x - r.x, camera.vp.y - r.y, camera.vp.z - r.z,
-			camera.vp.x - r.x + camera.vd.x,
-			camera.vp.y - r.y + camera.vd.y,
-			camera.vp.z - r.z + camera.vd.z,
-			camera.vu.x, camera.vu.y, camera.vu.z);
-		MakeLighting();
-		MakeGeometry(); 
-*/
