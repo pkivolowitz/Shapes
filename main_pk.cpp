@@ -6,6 +6,7 @@
 #include "plane.h"
 #include "phong_shader.h"
 #include "constant_shader.h"
+#include "blurshader.h"
 #include "ilcontainer.h"
 #include "instance.h"
 #include "window.h"
@@ -15,7 +16,56 @@
 using namespace std;
 using namespace glm;
 
-//#define	FULL_SCREEN
+bool CheckGLErrors(const char * caller)
+{
+
+	GLenum e;
+	bool r = true;
+
+	while ((e = glGetError()) != GL_NO_ERROR)
+	{
+		r = false;
+		cout << caller << " " << gluErrorString(e) << endl;
+	}
+	return r;
+}
+
+vector<string> instructions = {
+	"'b' - toggle blur",
+	"'f' - toggle full screen",
+	"      fails on Intel GPU",
+	"'i' - toggle instructions",
+	"'l' and 'L' - line width",
+	"'p' - toggle pause",
+	"'z' and 'Z' - zoom",
+	"'x' and ESC - exit"
+};
+
+void DisplayInstructions(int w , int h)
+{
+	glLineWidth(1.0f);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glColor3f(1.0f , 1.0f , 1.0f);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0 , w , 0 , h , 1 , 10);
+	glViewport(0 , 0 , w , h);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	int height = 19;
+	glTranslated(10 , height * instructions.size() , -5.5);
+	glScaled(0.1 , 0.1 , 1.0);
+	for (auto i = instructions.begin(); i < instructions.end(); ++i)
+	{
+		glPushMatrix();
+		glutStrokeString(GLUT_STROKE_MONO_ROMAN , (const unsigned char *) (*i).c_str());
+		glPopMatrix();
+		glTranslated(0 , -(height + 1) * 10 , 0);
+	}
+}
+
 #define	MOVE
 
 #ifdef USE_STEREO
@@ -27,6 +77,7 @@ using namespace glm;
 const int NUMBER_OF_OBJECTS = 32;
 vector<Instance> instances;
 freetype::font_data our_font;
+FrameBufferObject fbo;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
@@ -44,6 +95,8 @@ vec3 up(0.0f, 1.0f, 0.0f);
 
 PhongShader phong_shader;
 ConstantShader constant_shader;
+BlurShader blur_shader;
+
 vector<ShaderInitializer> shaders;
 vector<Window> windows;
 vector<ILContainer> textures;
@@ -163,16 +216,24 @@ void KeyboardFunc(unsigned char c, int x, int y)
 			window->draw_normals = !window->draw_normals;
 			break;
 
+		case 'f':
+			window->full_screen = !window->full_screen;
+			(window->full_screen) ? glutFullScreen() : glutLeaveFullScreen();
+			break;
+
+		case 'b':
+			window->blur = !window->blur;
+			break;
+
+		case 'i':
+			window->instructions = !window->instructions;
+			break;
+
 		case 'p':
 			if (!window->is_paused)
 			{
-				// We are being paused. 
-				// Store away the current time.
+				// We are being paused. Store away the current time.
 				window->time_when_paused = Window::CurrentTime();
-				
-				//cout << left << setw(10) << "P when: " << setprecision(4) << window->time_when_paused;
-				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
-				//cout << " Local: " << setprecision(4) << window->LocalTime() << endl;
 			}
 			else
 			{
@@ -181,13 +242,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 				// be subtracted from future gets of the current time.
 				//bug here
 				float elapsed_time_this_pause = Window::CurrentTime() - window->time_when_paused;
-				assert(elapsed_time_this_pause > 0);
 				window->time_spent_paused += elapsed_time_this_pause;
-
-				//cout << left << setw(10) << "U when: " << setprecision(4) << window->time_when_paused;
-				//cout << " spent: " << setprecision(4) << window->time_spent_paused;
-				//cout << " Local: " << setprecision(4) << window->LocalTime();
-				//cout << " Current: " << setprecision(6) << Window::CurrentTime() << endl;
 			}
 			window->is_paused = !window->is_paused;
 			break;
@@ -390,13 +445,29 @@ void DisplayPlane()
 		return;
 
 	glViewport(0, 0, window->size.x, window->size.y);
-	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
+	vec4 clear_color(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.0f , 0.0f , 0.0f);
 	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
 	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
 
-	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	if (window->blur)
+	{
+		// The user has elected to blur and accumulate (coming next) their drawing.
+		// So, instead of drawing to the screen, the user must draw into our framebuffer's
+		// color attachment 2 where it will be swept up in a blurring operation.
+
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , fbo.framebuffer_handle);
+		glDrawBuffer(GL_COLOR_ATTACHMENT2);
+
+		// Since we will be drawing into the framebuffer rather than the screen, the
+		// viewport must be appropriately resized.
+		glViewport(0 , 0 , fbo.size.x , fbo.size.y);
+
+		CheckGLErrors("DisplayPlane() after setting drawbuffer");
+	}
+	glClearColor(clear_color.r , clear_color.g , clear_color.b , 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	glEnable(GL_DEPTH_TEST);
 	mat4 model_matrix = rotate(mat4() , radians(window->LocalTime() * 40.0f) , vec3(0.0f , 1.0f , 0.0f));
 	model_matrix = scale(model_matrix , vec3(3.0f , 3.0f , 3.0f));
@@ -406,22 +477,70 @@ void DisplayPlane()
 
 	mat4 view_matrix = lookAt(vec3(10.0f , 0.0f , 0.0f) , vec3(0.0f , 0.0f , 0.0f) , vec3(0.0f , 1.0f , 0.0f));
 	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 	phong_shader.SetLightPosition(light_pos);
-	//phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
-	phong_shader.SelectSubroutine(PhongShader::VIGNETTE);
+	phong_shader.SetGlobalTime(window->CurrentTime());
+	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	//phong_shader.SelectSubroutine(PhongShader::VIGNETTE);
 	phong_shader.EnableTexture(textures[0] , 0);
 	plane2.Draw(false);
 	phong_shader.UnUse();
 
-	if (window->draw_normals)
+	if (window->blur)
 	{
-		constant_shader.Use(model_matrix, view_matrix, projection_matrix);
-		constant_shader.SetMaterial(diffuse, specular, 64.0f, vec3(1.0f, 1.0f, 1.0f));
+		// The user has elected to blur etc. Rather than having rendered to the screen,
+		// we have drawn to the framebuffer color attachment 2. Now we must blur the drawing.
+		glDisable(GL_BLEND);
+		glDisable(GL_DEPTH_TEST);
+		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
+		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
+
+		if (window->draw_normals)
+		{
+			glEnable(GL_DEPTH_TEST);
+			glBindFramebuffer(GL_FRAMEBUFFER , fbo.framebuffer_handle);
+			glDrawBuffer(GL_COLOR_ATTACHMENT2);
+
+			constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+			constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
+			plane2.Draw(true);
+			constant_shader.UnUse();
+			glDrawBuffer(0);
+			glBindFramebuffer(GL_FRAMEBUFFER , 0);
+		}
+
+		// First, unbind from the framebuffer for drawing so that the destination goes
+		// back to the screen.
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , 0);
+		glDrawBuffer(GL_BACK);
+		glClearBufferfv(GL_COLOR , 0 , value_ptr(clear_color));
+		CheckGLErrors("DisplayFunc() unbound the draw framebuffer");
+
+		// Bind the framebuffer as the source for the following blit.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER , fbo.framebuffer_handle);
+		glReadBuffer(GL_COLOR_ATTACHMENT2);
+		glBlitFramebuffer(0 , 0 , fbo.size.x , fbo.size.y , 0 , 0 , window->size.x , window->size.y , GL_COLOR_BUFFER_BIT , GL_LINEAR);
+
+		// Unuse the framebuffer as the source.
+		glBindFramebuffer(GL_READ_FRAMEBUFFER , 0);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER , 0);
+	}
+	else if (window->draw_normals)
+	{
+		glEnable(GL_DEPTH_TEST);
+		glViewport(0 , 0 , window->size.x , window->size.y);
+		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
+		constant_shader.SetMaterial(diffuse , specular , 64.0f , vec3(1.0f , 1.0f , 1.0f));
 		plane2.Draw(true);
 		constant_shader.UnUse();
 	}
+
+
+	if (window->instructions)
+		DisplayInstructions(window->size.x , window->size.y);
+
 	glutSwapBuffers();
 	plane2.UpdateValues(TestUpdatePlane , window->LocalTime() , (void *) &plane2.Dimensions());
 }
@@ -496,7 +615,6 @@ void DisplayGrid()
 	}
 	glutSwapBuffers();
 }
-
 
 void DisplayCylinder()
 {
@@ -614,6 +732,7 @@ int main(int argc, char * argv[])
 	// Add a line here for every shader defined. This will take care of loading and unloading.
 	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
+	shaders.push_back(ShaderInitializer(&blur_shader , "blur.vs.glsl" , "blur.fs.glsl" , "blur shader failed to initialize"));
 
 	// Adds objects to the world. These instances are for the massive mashup of shapes.
 	Instance::DefineInstances(instances, NUMBER_OF_OBJECTS);
@@ -641,43 +760,41 @@ int main(int argc, char * argv[])
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
 	windows[0].SetWindowTitle("NEW TITLE");
+	bool ok = true;
 
 	// This must be called AFTER an OpenGL context has been built.
 	if (glewInit() != GLEW_OK)
 	{
 		cerr << "GLEW failed to initialize." << endl;
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		ok = false;
 	}
 
 	// This must be called AFTER initializing GLEW - else non of the 
 	// new GL features will be found.
-	if (!ShaderInitializer::Initialize(&shaders))
+	if (ok && !ShaderInitializer::Initialize(&shaders))
 	{
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		cerr << "ShaderInitializer::Initializer() failed." << endl;
+		ok = false;
 	}
 
-	our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
+	if (ok)
+		our_font.init("c:\\windows\\fonts\\Candarai.ttf" , 128);
 	
-	// Add any textures needed here. This will someday be replaced with a function
-	// doing the same thing but taking its list of textures from a URI.
+	if (ok && !fbo.Initialize(glm::ivec2(1920 , 1200) , 3 , true))
+	{
+		cerr << "fbo.Initialize() failed." << endl;
+		ok = false;
+	}
+
 	if (!InitializeTextures())
 	{
-		cerr << "Hit enter to exit:";
-		cin.get();
-		return 0;
+		ok = false;
 	}
 
-#ifdef FULL_SCREEN
-	glutFullScreen();
-#endif
-	
 	glutMainLoop();
 
 	ShaderInitializer::TakeDown(&shaders);
 	ILContainer::TakeDown(textures);
+	system("pause");
 	return 0;
 }
