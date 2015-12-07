@@ -15,6 +15,7 @@ public:
 	void CustomSetup();
 	void SetGlobalTime(float global_time);
 	void EnableTexture(ILContainer & ilcontainer , GLuint texture_unit);
+	void SetOpacity(float opacity);
 
 	enum SubroutineIndices
 	{
@@ -22,7 +23,6 @@ public:
 		BASIC_PHONG,
 		PHONG_WITH_TEXTURE,
 		SHADER_TOY_1,
-		VIGNETTE,
 		NUMBER_OF_SUBROUTINES
 	};
 
@@ -42,6 +42,7 @@ private:
 		GLuint light_position;
 		GLuint base_texture_location;
 		GLuint global_time;
+		GLuint opacity;
 		GLuint param1;
 		GLuint param2;
 	} uniforms;

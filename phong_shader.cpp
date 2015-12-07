@@ -69,6 +69,11 @@ void PhongShader::SetGlobalTime(float global_time)
 	glUniform1f(uniforms.global_time , global_time);
 }
 
+void PhongShader::SetOpacity(float opacity)
+{
+	assert(this->is_used == true);
+	glUniform1f(uniforms.opacity , opacity);
+}
 void PhongShader::CustomSetup()
 {
 	Shader::Use();
@@ -79,6 +84,7 @@ void PhongShader::CustomSetup()
 	uniforms.specular_albedo = glGetUniformLocation(this->program_id, "specular_albedo");
 	uniforms.specular_power = glGetUniformLocation(this->program_id, "specular_power");
 	uniforms.ambient = glGetUniformLocation(this->program_id, "ambient");
+	uniforms.opacity = glGetUniformLocation(this->program_id , "opacity");
 	uniforms.modelview_matrix = glGetUniformLocation(this->program_id , "mv_matrix");
 	uniforms.view_matrix = glGetUniformLocation(this->program_id , "view_matrix");
 	uniforms.normal_matrix = glGetUniformLocation(this->program_id , "normal_matrix");
@@ -89,7 +95,6 @@ void PhongShader::CustomSetup()
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER, "PerPixelLighting"));
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "PPLWithTexture"));
 	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "ShaderToy1"));
-	this->subroutine_indices.push_back(glGetSubroutineIndex(this->program_id , GL_FRAGMENT_SHADER , "PPLWithTextureAndVignette"));
 	Shader::UnUse();
 }
 
