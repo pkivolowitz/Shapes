@@ -23,6 +23,7 @@ in VS_OUT
 uniform vec3 diffuse_albedo;
 uniform vec3 specular_albedo;
 uniform float specular_power;
+uniform float opacity = 1.0;
 uniform vec3 ambient;
 
 uniform sampler2D base_texture;
@@ -35,7 +36,7 @@ vec3 light_position = vec3(0.0, 0.0, 100.0);
 subroutine(color_t)
 vec4 Constant()
 {
-	return vec4(ambient, 1.0);
+	return vec4(ambient, opacity);
 }
 
 subroutine(color_t)
@@ -56,19 +57,14 @@ vec4 PerPixelLighting()
 	vec3 diffuse = max(dot(s, n), 0.0) * diffuse2;
 	vec3 specular = pow(max(dot(r, v), 0.0), specular_power) * specular_albedo;
 
-	return vec4(ambient + diffuse + specular, 1.0);
-}
-
-subroutine(color_t)
-vec4 PPLWithTextureAndVignette()
-{
-	return texture(base_texture, fs_in.T);
+	return vec4(ambient + diffuse + specular, opacity);
 }
 
 subroutine(color_t)
 vec4 PPLWithTexture()
 {
-	vec3 diffuse2 = vec3(texture(base_texture, fs_in.T));
+	vec4 t = texture(base_texture, fs_in.T);
+	vec3 diffuse2 = vec3(t);
 	vec3 N2 = fs_in.N;
 
 	if (!gl_FrontFacing)
@@ -82,8 +78,8 @@ vec4 PPLWithTexture()
 	vec3 diffuse = max(dot(s, n), 0.0) * diffuse2;
 	vec3 specular = pow(max(dot(r, v), 0.0), specular_power) * specular_albedo;
 
-	return vec4(ambient + diffuse + specular, 1.0);
-		//vec4(fs_in.T.t, fs_in.T.t, fs_in.T.t, 0); // 
+	return vec4(vec3(ambient + diffuse + specular), t.a * opacity);
+			//vec4(fs_in.T.t, fs_in.T.t, fs_in.T.t, 0); // 
 }
 
 subroutine(color_t)
