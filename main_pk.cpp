@@ -35,8 +35,9 @@ vector<string> instructions = {
 	"'f' - toggle full screen",
 	"      fails on Intel GPU",
 	"'i' - toggle instructions",
-	"'l' and 'L' - line width",
+	"'+' and '-' - field of view",
 	"'p' - toggle pause",
+	"'w' - toggle wireframe",
 	"'z' and 'Z' - zoom",
 	"'x' and ESC - exit"
 };
@@ -74,13 +75,13 @@ void DisplayInstructions(int w , int h)
 #define	DISPLAY_MODE	(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE)
 #endif // USE_STEREO
 
-const int NUMBER_OF_OBJECTS = 32;
+const int NUMBER_OF_OBJECTS = 128;
 vector<Instance> instances;
 freetype::font_data our_font;
 FrameBufferObject fbo;
 
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
-Disc disc2(64, pi<float>() * 2.0f , 0.25f , 0.0f);
+Disc disc2(64, pi<float>() * 2.0f , 1.0f , 0.0f);
 Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
 Cylinder cylinder1(32, 4,  pi<float>() * 2.0f, 1.0f, 1.0f);
 Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
@@ -265,6 +266,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 		case 'x':
 		case 27:
+			glutLeaveFullScreen();
 			glutLeaveMainLoop();
 			return;
 	}
@@ -272,25 +274,47 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 void DrawScene(Window * window)
 {
+	glClearColor(0, 0, 0, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
+	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
 	phong_shader.GLReturnedError("DrawScene() - entering");
 #ifdef MOVE
-	mat4 m = rotate(mat4() , radians(window->LocalTime() * 30.0f) , vec3(0.0f , 1.0f , 0.2f));
-	m = translate(m, vec3(0.0f, 11.5f * cos(window->LocalTime() * 0.5f) + 2.0f, 11.5f * sin(window->LocalTime() * 0.5f) + 2.0f));
+	mat4 m = rotate(mat4() , radians(window->LocalTime() * 60.0f) , vec3(0.0f , 1.0f , 0.2f));
+	m = translate(m, vec3(11.5f * sin(window->LocalTime() * 1.0f - 0.5) + 2.0f, 11.5f * cos(window->LocalTime() * 1.0f) + 2.0f, 11.5f * sin(window->LocalTime() * 1.0f) + 2.0f));
 #else
 	mat4 m;
 #endif // MOVE
+	mat4 projection_matrix = perspective(radians(window->fovy) , window->aspect , window->near_distance , window->far_distance);
+	glViewport(0 , 0 , window->size.x , window->size.y);
 
-	mat4 view_matrix = lookAt(vec3(m * vec4(eye, 1.0f)), cop, up);
+	vec3 e = vec3(m * vec4(eye , 1.0f));
+	mat4 view_matrix = lookAt(e, cop, up);
 	mat4 model_matrix;
-	mat4 projection_matrix = perspective(radians(window->fovy), window->aspect, window->near_distance, window->far_distance);
 
+	// Skybox can be made here - translate by the inverse of the eye
+	model_matrix = translate(model_matrix , e);
+	model_matrix = scale(model_matrix , vec3(10.0f , 10.0f , 10.0f));
+
+	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
+	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	phong_shader.EnableTexture(textures[4] , 0);
+	phong_shader.SetMaterial(vec3(1.0f, 1.0f, 1.0f) , vec3() , 32.0f , ambient);
+	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
+	phong_shader.SetOpacity(1.0f);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	cube.Draw(false);
+	phong_shader.UnUse();
+	glDisable(GL_TEXTURE_2D);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	model_matrix = mat4();
 	vec3 z_axis = vec3(0.0f, 0.0f, 1.0f);
 	vec3 y_axis = vec3(0.0f, 1.0f, 0.0f);
-	vec3 ambient = vec3(0.1f, 0.1f, 0.1f);
-	vec3 specular = vec3(1.0f, 1.0f, 1.0f);
 	float c_offset = radians(45.0f);
 
-	glViewport(0, 0, window->size.x, window->size.y);
 
 	const int count_of_shapes = 4;
 
@@ -312,11 +336,12 @@ void DrawScene(Window * window)
 			disc1.Draw(false);
 			break;
 		case 1:
-			disc3.Draw(false);
+			disc2.Draw(false);
 			break;
 		case 2:
+			glEnable(GL_TEXTURE_2D);
 			phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
-			phong_shader.EnableTexture(textures[2], 0);
+			phong_shader.EnableTexture(textures[i % textures.size() - 1], 0);
 			plane2.Draw(false);
 			glDisable(GL_TEXTURE_2D);
 			break;
@@ -327,11 +352,13 @@ void DrawScene(Window * window)
 		phong_shader.UnUse();
 	}
 
+	glDisable(GL_BLEND);
 	model_matrix = mat4();
 	mat4 mz = model_matrix;
 	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
 
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 	phong_shader.SetMaterial(vec3(0.0f, 0.0f, 0.8f), specular, 128.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder1.Draw(false);
@@ -340,6 +367,7 @@ void DrawScene(Window * window)
 	model_matrix = rotate(mz, radians(90.0f), y_axis);
 	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 	phong_shader.SetMaterial(vec3(1.0f, 0.0f, 0.0f), specular, 128.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder1.Draw(false);
@@ -348,12 +376,13 @@ void DrawScene(Window * window)
 	model_matrix = rotate(mz, radians(-90.0f), vec3(1.0f, 0.0f, 0.0f));
 	model_matrix = scale(model_matrix, vec3(0.5f, 0.5f, 16.0f));
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 	phong_shader.SetMaterial(vec3(0.0f, 1.0f, 0.0f), specular, 128.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 1000.0f, 0.0f));
 	cylinder1.Draw(false);
 	phong_shader.UnUse();
 
-	cylinder1.UpdateValues(TestUpdate, window->LocalTime(), nullptr);
+	//cylinder1.UpdateValues(TestUpdate, window->LocalTime(), nullptr);
 }
 
 void DisplayCube()
@@ -406,7 +435,7 @@ void DisplayDisc()
 	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
 	vec3 ambient = vec3(0.0f , 0.0f , 0.0f);
 	vec3 specular = vec3(0.0f , 0.0f , 0.3f);
-	vec3 diffuse = vec3(0.0f , 0.0f , 0.9f);
+	vec3 diffuse = vec3(0.9f , 0.9f , 0.9f);
 
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -422,20 +451,21 @@ void DisplayDisc()
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SetMaterial(diffuse , specular , 128.0f , ambient);
 	phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
-	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
-	phong_shader.EnableTexture(textures[2] , 0);
-	disc3.Draw(false);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
+	//phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
+	//phong_shader.EnableTexture(textures[2] , 0);
+	disc2.Draw(false);
 	phong_shader.UnUse();
 
 	if (window->draw_normals)
 	{
 		constant_shader.Use(model_matrix , view_matrix , projection_matrix);
 		constant_shader.SetMaterial(diffuse , specular , 32.0f , vec3(1.0f , 1.0f , 1.0f));
-		disc3.Draw(true);
+		disc2.Draw(true);
 		constant_shader.UnUse();
 	}
 	glutSwapBuffers();
-	disc3.UpdateValues(TestUpdateDisc , window->LocalTime(), nullptr);
+	//disc3.UpdateValues(TestUpdateDisc , window->LocalTime(), nullptr);
 }
 
 void DisplayPlane()
@@ -547,14 +577,34 @@ void DisplayPlane()
 
 void DisplayGrid()
 {
-	//cout << "dg\n";
+	static int texture_index = 0;
+	static int opacity_direction = 0;
 
 	Window * window = Window::FindCurrentWindow(windows);
 	if (window->handle == BAD_GL_VALUE)
 		return;
 
+	float fade_controller = float(fmod(double(window->LocalTime()), 10.0));
+	float opacity = 1.0f;
+
+	if (fade_controller < 1.0f)
+	{
+		
+		opacity = smoothstep(0.0f , 1.0f , fade_controller);
+		if (opacity_direction < 0)
+			texture_index = (texture_index + 1) % textures.size();
+		opacity_direction = 1;
+	}
+	else if (fade_controller >= 9.0f)
+	{
+		opacity = smoothstep(0.0f , 1.0f , 10.0f - fade_controller);
+		opacity_direction = -1;
+	}
+
+	//cout << "Fade Controller: " << fade_controller << " opacity: " << opacity << endl;
+
 	glViewport(0 , 0 , window->size.x , window->size.y);
-	vec4 crimson(0.6f , 0.0f , 0.0f , 1.0f);
+	vec4 crimson(0.6f , 0.0f , 0.0f , 0.0f);
 	vec3 ambient = vec3(0.0f , 0.0f , 0.0f);
 	vec3 specular = vec3(1.0f , 1.0f , 1.0f);
 	vec3 diffuse = vec3(0.0f , 0.0f , 0.8f);
@@ -562,6 +612,8 @@ void DisplayGrid()
 	glClearColor(crimson.r , crimson.g , crimson.b , crimson.a);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA , GL_ONE_MINUS_SRC_ALPHA);
 
 	vector<Constellation::PositionData> & pd = gc.GetPositionData();
 
@@ -600,7 +652,8 @@ void DisplayGrid()
 		phong_shader.SetMaterial(diffuse , specular , 64.0f , ambient);
 		phong_shader.SetLightPosition(vec3(0.0f , 0.0f , 1000.0f));
 		phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
-		phong_shader.EnableTexture(textures[1] , 0);
+		phong_shader.EnableTexture(textures[texture_index] , 0);
+		phong_shader.SetOpacity(opacity);
 		plane2.Draw(false);
 		phong_shader.UnUse();
 		if (window->draw_normals)
@@ -613,6 +666,7 @@ void DisplayGrid()
 		// Animate the rotation of the objects within the grid.
 		(*iter).outward_direction_vector = vec3(r * vec4((*iter).outward_direction_vector, 1.0f));
 	}
+	glDisable(GL_BLEND);
 	glutSwapBuffers();
 }
 
@@ -704,7 +758,7 @@ bool InitializeTextures()
 	texture_file_names.push_back("c2.jpg");
 	texture_file_names.push_back("c3.jpg");
 	texture_file_names.push_back("c4.jpg");
-
+	texture_file_names.push_back("carthage-logo-main.png");
 	textures.resize(texture_file_names.size());
 	for (size_t i = 0; i < texture_file_names.size(); i++)
 	{
@@ -751,12 +805,12 @@ int main(int argc, char * argv[])
 	gc.Initialize(525);
 
 	// This vector is used to initialize all the window objects. 
-	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
-	//windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
 	windows[0].SetWindowTitle("NEW TITLE");
