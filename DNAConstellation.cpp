@@ -48,7 +48,7 @@ bool DNAConstellation::Initialize(int number_of_objects)
 		for (float t = delta; t <= 1; t+=delta)
 		{
 			//vec3_for_spin = vec3(sinf(t), 0.0f, tanf(i));
-			this->positions[count++] = PositionData(glm::mix(positions[0].location, nGon_points[i], t), vec3_for_spin);
+			this->positions[count++] = PositionData(glm::mix(positions[0].location, nGon_points[i], t), -nGon_points[i]);
 			//positions[count - 1].location.z *= 50;
 		}
 	}
@@ -60,7 +60,7 @@ bool DNAConstellation::Initialize(int number_of_objects)
 		for (float t = delta; t <= (1 - delta); t += delta)
 		{
 			//vec3_for_spin = vec3(sinf(t), 0.0f, tanf(i));
-			this->positions[count++] = PositionData(glm::mix(bottom_vertex_of_diamond, nGon_points[i], t), vec3_for_spin);
+			this->positions[count++] = PositionData(glm::mix(bottom_vertex_of_diamond, nGon_points[i], t), -nGon_points[i]);
 			positions[count - 1].location.z *= 50;
 		}
 	}

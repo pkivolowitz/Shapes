@@ -30,7 +30,9 @@ bool CubeConstellation::Initialize(int number_of_objects)
 		p.y += delta;
 	}
 
-	mat4 T = translate(mat4(), vec3(0.0f, 0.0f, 2.0f));
+	float deltat = 1.25f;
+
+	mat4 T = translate(mat4(), vec3(0.0f, 0.0f, deltat));
 	mat4 R;
 	mat4 S = rotate(mat4(), pi < float >() / -2.0f, vec3(1.0f, 0.0f, 0.0f));
 	mat4 Q;
@@ -39,15 +41,16 @@ bool CubeConstellation::Initialize(int number_of_objects)
 	{
 		for (unsigned int j = 0; j < temp.size(); j++)
 		{
-			vec3 d = vec3(Q * vec4(temp[j].outward_direction_vector, 1.0f));
+			vec3 d = vec3(R * vec4(0.0f, 0.0f, 1.0f, 0.0f));
 			vec3 p = vec3(R * T * vec4(temp[j].location, 1.0f));
 			this->positions[i++] = PositionData(p, d);
 		}
+		// R spins around the Y axis to make the four sides.
 		R = rotate(R, pi <float>() / 2.0f, vec3(0.0f, 1.0f, 0.0f));
 		Q = rotate(R, pi <float>() / (((k%2 == 0) ? -1 : 1) * 2.0f), vec3(0.0f, 1.0f, 0.0f));
 	}
 
-	T = translate(mat4(), vec3(0.0f, -2.0f, 0.0f));
+	T = translate(mat4(), vec3(0.0f, -deltat, 0.0f));
 	R = mat4();
 	for (int m = 0; m < 2; m++)
 	{

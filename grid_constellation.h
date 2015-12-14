@@ -12,3 +12,23 @@ public:
 
 	bool Initialize(int number_of_objects);
 };
+
+class SphereConstellation : public Constellation
+{
+public:
+	SphereConstellation() : Constellation()
+	{
+	}
+
+	bool Initialize(int number_of_objects);
+};
+
+class SpiralConstellation : public Constellation
+{
+public:
+	SpiralConstellation() : Constellation()
+	{
+	}
+
+	bool Initialize(int number_of_objects);
+};
