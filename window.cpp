@@ -56,14 +56,14 @@ void Window::InitializeWindows(std::vector<Window> & windows, void(*DisplayFunc)
 			continue;
 
 		windows[i].handle = glutCreateWindow(windows[i].window_name);
-		glutReshapeFunc(ReshapeFunc);
-		glutCloseFunc(CloseFunc);
 		glutDisplayFunc(DisplayFunc);
-		glutKeyboardFunc(KeyboardFunc);
-		if (i == 0)
-		{
-			//glutTimerFunc(1000 / 60 , TimerFunc , 1000 / 60);
+		glutReshapeFunc(ReshapeFunc);
+		if (CloseFunc != nullptr)
+			glutCloseFunc(CloseFunc);
+		if (IdleFunc != nullptr)
 			glutIdleFunc(IdleFunc);
-		}
+		if (KeyboardFunc != nullptr)
+			glutKeyboardFunc(KeyboardFunc);
+
 	}
 }

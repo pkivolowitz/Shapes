@@ -19,95 +19,91 @@ Plane::Plane(int divisionsX, int divisionsY)
 	this->divisionsY = divisionsY;
 }
 
-void Cube::AddTextureCoordinates()
-{
-	this->data.textures.push_back(vec2(0.0f , 1.0f));
-	this->data.textures.push_back(vec2(1.0f , 1.0f));
-	this->data.textures.push_back(vec2(1.0f , 0.0f));
-	this->data.textures.push_back(vec2(0.0f , 0.0f));
-}
-
 // PreGLInitialize is used to establish an initial configuration of vertex
 // attributes include position, normal, etc.
 bool Cube::PreGLInitialize()
 {
-	// Front
-	this->data.vertices.push_back(vec3(-1.0f,  1.0f,  1.0f));
-	this->data.vertices.push_back(vec3( 1.0f,  1.0f,  1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, -1.0f,  1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f,  1.0f));
+	mat4 m;
 	for (int i = 0; i < 4; i++)
 	{
-		this->data.normals.push_back(vec3(0.0f , 0.0f , 1.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[0 + i] + this->data.normals[0 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	// right (facing positive x axis)
-	this->data.vertices.push_back(vec3(1.0f,  1.0f,  1.0f));
-	this->data.vertices.push_back(vec3(1.0f,  1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(1.0f, -1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(1.0f, -1.0f,  1.0f));
-	for (int i = 0; i < 4; i++)
-	{
-		this->data.normals.push_back(vec3(1.0f , 0.0f , 0.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[4 + i] + this->data.normals[4 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	// back (facing negative z axis)
-	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f, -1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, -1.0f, -1.0f));
-	for (int i = 0; i < 4; i++)
-	{
-		this->data.normals.push_back(vec3(0.0f , 0.0f , -1.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[8 + i] + this->data.normals[8 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	// left (facing negative x axis
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f,  1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f,-1.0f));
-	for (int i = 0; i < 4; i++)
-	{
-		this->data.normals.push_back(vec3(-1.0f , 0.0f , 0.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[12 + i] + this->data.normals[12 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	// top (facing positive y axis)
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f, -1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, 1.0f, -1.0f));
-	this->data.vertices.push_back(vec3( 1.0f, 1.0f,  1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, 1.0f,  1.0f));
-	for (int i = 0; i < 4; i++)
-	{
-		this->data.normals.push_back(vec3(0.0f , 1.0f , 0.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[16 + i] + this->data.normals[16 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	// bottom (facing negative y axis)
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f, 1.0f));
-	this->data.vertices.push_back(vec3(1.0f, -1.0f, 1.0f));
-	this->data.vertices.push_back(vec3(1.0f, -1.0f, -1.0f));
-	this->data.vertices.push_back(vec3(-1.0f, -1.0f, -1.0f));
-	for (int i = 0; i < 4; i++)
-	{
-		this->data.normals.push_back(vec3(0.0f , -1.0f , 0.0f));
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i]);
-		this->data.normal_visualization_coordinates.push_back(this->data.vertices[20 + i] + this->data.normals[20 + i] / NORMAL_LENGTH_DIVISOR);
-	}
-	AddTextureCoordinates();
-	
-	// Faces complete.
+		this->data.vertices.push_back(vec3(m * vec4(-1.0f,  1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4( 1.0f,  1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4( 1.0f, -1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4(-1.0f, -1.0f, 1.0f, 1.0f)));
 
-	for (unsigned int i = 0; i < this->data.vertices.size(); i++)
-		this->data.indices.push_back(i);
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 0]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 0] + this->data.normals[i * 4 + 0] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 1]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 1] + this->data.normals[i * 4 + 1] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 2]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 2] + this->data.normals[i * 4 + 2] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 3]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 3] + this->data.normals[i * 4 + 3] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.indices.push_back(i * 4 + 0);
+		this->data.indices.push_back(i * 4 + 1);
+		this->data.indices.push_back(i * 4 + 2);
+		this->data.indices.push_back(i * 4 + 3);
+
+		this->data.textures.push_back(vec2(0.0f, 1.0f));
+		this->data.textures.push_back(vec2(1.0f, 1.0f));
+		this->data.textures.push_back(vec2(1.0f, 0.0f));
+		this->data.textures.push_back(vec2(0.0f, 0.0f));
+
+		m = rotate(m, glm::pi<float>() / 2.0f, vec3(0.0f, 1.0f, 0.0f));
+	}
+
+	m = mat4();
+	m = rotate(m, glm::pi<float>() / 2.0f, vec3(1.0, 0.0, 0.0f));
+	size_t base = data.vertices.size();
+
+	for (int i = 0; i < 2; i++)
+	{
+		this->data.vertices.push_back(vec3(m * vec4(-1.0f, 1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4(1.0f, 1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4(1.0f, -1.0f, 1.0f, 1.0f)));
+		this->data.vertices.push_back(vec3(m * vec4(-1.0f, -1.0f, 1.0f, 1.0f)));
+
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+		this->data.normals.push_back(vec3(m * vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 0 + base]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 0 + base] + this->data.normals[i * 4 + 0 + base] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 1 + base]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 1 + base] + this->data.normals[i * 4 + 1 + base] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 2 + base]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 2 + base] + this->data.normals[i * 4 + 2 + base] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 3 + base]);
+		this->data.normal_visualization_coordinates.push_back(this->data.vertices[i * 4 + 3 + base] + this->data.normals[i * 4 + 3 + base] / NORMAL_LENGTH_DIVISOR);
+
+		this->data.indices.push_back(i * 4 + 0 + base);
+		this->data.indices.push_back(i * 4 + 1 + base);
+		this->data.indices.push_back(i * 4 + 2 + base);
+		this->data.indices.push_back(i * 4 + 3 + base);
+
+		this->data.textures.push_back(vec2(0.0f, 1.0f));
+		this->data.textures.push_back(vec2(1.0f, 1.0f));
+		this->data.textures.push_back(vec2(1.0f, 0.0f));
+		this->data.textures.push_back(vec2(0.0f, 0.0f));
+
+		m = rotate(m, glm::pi<float>(), vec3(1.0f, 0.0f, 0.0f));
+	}
+
+
+	// Faces complete.
 
 	this->data.vbackup = this->data.vertices;
 	return true;

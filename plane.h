@@ -46,10 +46,9 @@ class Cube : public Shape
 {
 public:
 	Cube() {}
-	void Draw(bool draw_normals = false);
+	virtual void Draw(bool draw_normals = false);
 protected:
 	bool PreGLInitialize();
 	void NonGLTakeDown();
 	void RecomputeNormals();
-	void AddTextureCoordinates();
 };

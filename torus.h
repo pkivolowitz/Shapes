@@ -4,7 +4,7 @@
 class Torus : public Shape
 {
 public:
-	Torus(float innerRadius, float outerRadius, int sides, int rings);
+	Torus(float innerRadius = 0.25f, float outerRadius = 1.0f, int sides = 64, int rings = 64);
 protected:
 	bool PreGLInitialize();
 	void NonGLTakeDown();
