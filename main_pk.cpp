@@ -4,9 +4,15 @@
 #include "disc.h"
 #include "cylinder.h"
 #include "plane.h"
+#include "Star.h"
+#include "Donut.h"
+#include "fan.h"
+#include "Dodecahedron.h"
+#include "torus.h"
 #include "phong_shader.h"
 #include "constant_shader.h"
 #include "blurshader.h"
+#include "SobelShader.h"
 #include "ilcontainer.h"
 #include "instance.h"
 #include "window.h"
@@ -80,6 +86,9 @@ vector<Instance> instances;
 freetype::font_data our_font;
 FrameBufferObject fbo;
 
+Dodecahedron dodec;
+Donut donut(64, 64, pi<float>() * 2.0f, 1.0f, 0.25f);
+Torus torus(0.5f , 1.0f , 64 , 32);
 Disc disc1(64, pi<float>() * 1.5f, 0.25f, 0.125f);
 Disc disc2(64, pi<float>() * 2.0f , 1.0f , 0.0f);
 Disc disc3(128, pi<float>() * 2.0f , 1.0f , 0.0f);
@@ -88,6 +97,9 @@ Cylinder cylinder2(4 , 2 , pi<float>() * 2.0f , 1.0f , 0.5f);
 Plane plane1(8 , 8);
 Plane plane2(32, 32);
 Cube cube;
+Fan fan;
+Star star(0.5f);
+
 GridConstellation gc;
 
 vec3 eye(0.0f, 0.0f, 15.0f);
@@ -97,6 +109,7 @@ vec3 up(0.0f, 1.0f, 0.0f);
 PhongShader phong_shader;
 ConstantShader constant_shader;
 BlurShader blur_shader;
+SobelShader sobel_shader;
 
 vector<ShaderInitializer> shaders;
 vector<Window> windows;
@@ -274,7 +287,7 @@ void KeyboardFunc(unsigned char c, int x, int y)
 
 void DrawScene(Window * window)
 {
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0.6f, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	vec3 ambient = vec3(0.1f , 0.1f , 0.1f);
@@ -295,7 +308,7 @@ void DrawScene(Window * window)
 
 	// Skybox can be made here - translate by the inverse of the eye
 	model_matrix = translate(model_matrix , e);
-	model_matrix = scale(model_matrix , vec3(10.0f , 10.0f , 10.0f));
+	model_matrix = scale(model_matrix , vec3(2.0f , 2.0f , 2.0f));
 
 	phong_shader.Use(model_matrix , view_matrix , projection_matrix);
 	phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
@@ -408,9 +421,9 @@ void DisplayCube()
 	phong_shader.Use(model_matrix, view_matrix, projection_matrix);
 	phong_shader.SetMaterial(diffuse, specular, 64.0f, ambient);
 	phong_shader.SetLightPosition(vec3(0.0f, 0.0f, 1000.0f));
-	phong_shader.SelectSubroutine(PhongShader::SHADER_TOY_1);
+	phong_shader.SelectSubroutine(PhongShader::BASIC_PHONG);
 	phong_shader.SetGlobalTime(Window::CurrentTime());
-	phong_shader.EnableTexture(textures[3] , 0);
+	//phong_shader.EnableTexture(textures[3] , 0);
 	cube.Draw(false);
 	phong_shader.UnUse();
 	if (window->draw_normals)
@@ -421,8 +434,7 @@ void DisplayCube()
 		constant_shader.UnUse();
 	}
 	glutSwapBuffers();
-	cube.UpdateValues(TestUpdateCube, window->LocalTime(), nullptr);
-
+	//cube.UpdateValues(TestUpdateCube, window->LocalTime(), nullptr);
 }
 
 void DisplayDisc()
@@ -524,7 +536,7 @@ void DisplayPlane()
 		// we have drawn to the framebuffer color attachment 2. Now we must blur the drawing.
 		glDisable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
-		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
+		//SobelShader::Sobel(sobel_shader , fbo , true , fbo.size.x , 5);
 		BlurShader::Blur(blur_shader , fbo , true , fbo.size.x , 5);
 
 		if (window->draw_normals)
@@ -654,7 +666,7 @@ void DisplayGrid()
 		phong_shader.SelectSubroutine(PhongShader::PHONG_WITH_TEXTURE);
 		phong_shader.EnableTexture(textures[texture_index] , 0);
 		phong_shader.SetOpacity(opacity);
-		plane2.Draw(false);
+		donut.Draw(false);
 		phong_shader.UnUse();
 		if (window->draw_normals)
 		{
@@ -787,6 +799,7 @@ int main(int argc, char * argv[])
 	shaders.push_back(ShaderInitializer(&phong_shader, "per-fragment-phong.vs.glsl", "per-fragment-phong.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&constant_shader, "constant.vs.glsl", "constant.fs.glsl", "phong shader failed to initialize"));
 	shaders.push_back(ShaderInitializer(&blur_shader , "blur.vs.glsl" , "blur.fs.glsl" , "blur shader failed to initialize"));
+	shaders.push_back(ShaderInitializer(&sobel_shader , "sobel.vs.glsl" , "sobel.fs.glsl" , "Sobel shader failed to initialize"));
 
 	// Adds objects to the world. These instances are for the massive mashup of shapes.
 	Instance::DefineInstances(instances, NUMBER_OF_OBJECTS);
@@ -805,12 +818,12 @@ int main(int argc, char * argv[])
 	gc.Initialize(525);
 
 	// This vector is used to initialize all the window objects. 
-	windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Basic Shape Viewer" , nullptr , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Cylinder" , DisplayCylinder , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
+	//windows.push_back(Window("Plane" , DisplayPlane , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
 	//windows.push_back(Window("Disc" , DisplayDisc , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 100.0f));
-	//windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
-	windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
+	windows.push_back(Window("Cube", DisplayCube, nullptr, nullptr, nullptr, ivec2(512, 512), 50.0f, 1.0f, 100.0f));
+	//windows.push_back(Window("Grid" , DisplayGrid , nullptr , nullptr , nullptr , ivec2(512 , 512) , 50.0f , 1.0f , 400.0f));
 	Window::InitializeWindows(windows , DisplayFunc , KeyboardFunc , CloseFunc, ReshapeFunc , IdleFunc);
 
 	windows[0].SetWindowTitle("NEW TITLE");
