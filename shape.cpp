@@ -13,7 +13,7 @@ void Shape::GLTakeDown()
 {
 }
 
-void Shape::Draw(bool draw_normals, GLuint what_to_draw)
+void Shape::Draw(bool draw_normals)
 {
 	if (this->data.vertices.size() == 0)
 	{
@@ -29,7 +29,7 @@ void Shape::Draw(bool draw_normals, GLuint what_to_draw)
 	else
 	{
 		glBindVertexArray(this->vertex_array_handle);
-		glDrawElements(what_to_draw , this->data.indices.size() , GL_UNSIGNED_INT , nullptr);
+		glDrawElements(GL_TRIANGLES , this->data.indices.size() , GL_UNSIGNED_INT , nullptr);
 	}
 	glBindVertexArray(0);
 	this->GLReturnedError("Shape::Draw() - exiting");

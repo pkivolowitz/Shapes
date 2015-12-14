@@ -69,7 +69,8 @@ public:
 	// THIS USED TO BE ABSTRACT. It has been refactored into the Shape class as most implementations are the same.
 	// The default call Draw() will draw faces (not normals) made from triangles. If you need something else,  for
 	// example with Cube (GL_QUADS), then add the optional arguements.
-	virtual void Draw(bool draw_normals = false, GLuint what_to_draw = GL_TRIANGLES);
+	virtual void Draw(bool draw_normals);
+	//virtual void Draw(bool draw_normals, GLuint what_to_draw);
 	virtual void UpdateValues(void(*Update)(struct Data & data, float current_time, void * blob), float current_time, void * blob);
 
 protected:

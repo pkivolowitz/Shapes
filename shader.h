@@ -26,15 +26,17 @@ class Shader
 {
 public:
 	Shader();
-	void TakeDown();
-	void Use();
-	void UnUse();
+	virtual void TakeDown();
+	virtual void Use();
+	virtual void UnUse();
+	virtual void Use(glm::mat4, glm::mat4, glm::mat4) {};
 	virtual bool Initialize(std::string vertex_shader_file, std::string fragment_shader_file);
 	virtual void CustomSetup() = 0;
 	virtual void SetMaterial(glm::vec3 diffuse_albedo, glm::vec3 specular_albedo, float specular_power, glm::vec3 ambient) = 0;
 	virtual void SetLightPosition(glm::vec3 light_position) {}
 	virtual void SelectSubroutine(int subroutine_index) {}
 	virtual void SetGlobalTime(float global_time) { }
+	virtual void SetOpacity(float opacity) {}
 	virtual void EnableTexture(ILContainer & ilcontainer , GLuint texture_unit) {}
 
 	GLuint vertex_shader_id;
